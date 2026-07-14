@@ -1,6 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Dither from './Dither.jsx'
+import ChartView from './ChartView.jsx'
+import CustomizePanel from './CustomizePanel.jsx'
 import { normalizePlaceOption, resolvePlaceSelection } from '../utils/placeOptions.js'
+import { buildDefaultWheelConfig } from '../utils/chartDefaults.js'
 import '../styles/hero.css'
 
 const API_BASE = (import.meta.env.VITE_CHART_API_BASE || '').trim()
@@ -15,98 +18,6 @@ const FIELD_ERRORS = {
   place: 'select a place of birth',
 }
 
-const WHEEL_DEFAULTS = {
-  aspects_shown: 'all',
-  max_orb: 12.0,
-  orb_fade: false,
-  aspect_hub: true,
-  conj_arcs: false,
-  min_footprint: 0.0,
-  glyph_scale: 1.0,
-  text_scale: 1.0,
-  line_scale: 1.0,
-  band_width: 1.0,
-  core_scale: 1.0,
-  show_decans: true,
-  show_tints: true,
-  ink: '#0A3323',
-  tint_fire: '#ECD8C6',
-  tint_earth: '#DDE0BC',
-  tint_air: '#F0E9C9',
-  tint_water: '#DBDDE7',
-  aspect_soft: '#839958',
-  aspect_hard: '#8A94C8',
-  aspect_conj: '#D3968C',
-}
-
-const PRESETS = {
-  Classic: {},
-  Airy: {
-    orb_fade: true,
-    max_orb: 6,
-    aspect_hub: true,
-    conj_arcs: true,
-    min_footprint: 4,
-    line_scale: 0.9,
-  },
-  Dense: {
-    glyph_scale: 0.9,
-    text_scale: 0.9,
-  },
-}
-
-function EditorialStepper({ currentStep, onStepClick }) {
-  const steps = [
-    { num: 'I.', label: 'your birth', completed: currentStep > 1, active: currentStep === 1 },
-    { num: 'II.', label: 'your sky', completed: currentStep > 2, active: currentStep === 2 },
-    { num: 'III.', label: 'your colors', completed: currentStep === 3, active: currentStep === 3 },
-  ]
-
-  return (
-    <div className="editorial-stepper">
-      {steps.map((step, i) => (
-        <div
-          key={i}
-          className={`step-item ${step.active ? 'active' : ''} ${step.completed ? 'completed' : ''}`}
-          onClick={() => step.completed && onStepClick(i + 1)}
-        >
-          <span className="step-num">{step.num}</span>
-          <span className="step-label">{step.label}</span>
-          {i < steps.length - 1 && <div className="step-divider">✦</div>}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function RuledSlider({ label, min, max, step, value, unit = '°', onChange }) {
-  const percent = ((value - min) / (max - min)) * 100
-  return (
-    <div className="ruled-slider">
-      <div className="slider-header">
-        <span className="slider-label">{label}</span>
-        <span className="slider-value">{value.toFixed(1)}{unit}</span>
-      </div>
-      <div className="rule-track">
-        <div className="rule-fill" style={{ width: `${percent}%` }} />
-      </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="range-input"
-      />
-      <div className="rule-labels">
-        <span>{min}{unit}</span>
-        <span>{max}{unit}</span>
-      </div>
-    </div>
-  )
-}
-
 export default function Hero() {
   const rightRef = useRef(null)
   const genRef = useRef(null)
@@ -116,16 +27,16 @@ export default function Hero() {
 
   const [values, setValues] = useState({ date: '', time: '', place: '', lat: '', lon: '' })
   const [errors, setErrors] = useState({})
-  const [submitted, setSubmitted] = useState(false)
-  const [currentStep, setCurrentStep] = useState(1)
-  const [formCompleted, setFormCompleted] = useState(false)
   const [placeOptions, setPlaceOptions] = useState([])
   const [placesLoading, setPlacesLoading] = useState(false)
-  const [wheelConfig, setWheelConfig] = useState(WHEEL_DEFAULTS)
+  const [wheelConfig, setWheelConfig] = useState(() => buildDefaultWheelConfig())
   const [chartSvg, setChartSvg] = useState('')
   const [chartError, setChartError] = useState('')
   const [chartLoading, setChartLoading] = useState(false)
   const [chartLoaded, setChartLoaded] = useState(false)
+  const [viewMode, setViewMode] = useState('form')
+  const [isTransitioningOut, setIsTransitioningOut] = useState(false)
+  const [pendingView, setPendingView] = useState(null)
 
   const requestSeq = useRef(0)
   const wheelChangeRef = useRef(false)
@@ -157,19 +68,12 @@ export default function Hero() {
     return Object.keys(next).length === 0
   }
 
-  const canGenerate = values.date && values.time && values.lat && values.lon
+  const canGenerate = Boolean(values.date && values.time && values.lat && values.lon)
 
-  const handleContinueToSky = () => {
-    const valid = validateRequired()
-    if (valid) {
-      setFormCompleted(true)
-      setCurrentStep(2)
-    }
-  }
+  const generateChart = useCallback(async ({ force = false } = {}) => {
+    if (!canGenerate) return false
+    if (!force && !chartLoaded) return false
 
-  const generateChart = async ({ force = false } = {}) => {
-    if (!canGenerate) return
-    if (!force && !chartLoaded) return
     const seq = ++requestSeq.current
     setChartLoading(true)
     setChartError('')
@@ -188,25 +92,33 @@ export default function Hero() {
         body: JSON.stringify(body),
       })
 
-      if (seq !== requestSeq.current) return
+      if (seq !== requestSeq.current) return false
 
       const payload = await response.json()
       if (!response.ok) {
         setChartError(payload.detail || 'couldn\'t generate chart — check your inputs')
-        return
+        return false
+      }
+
+      const nextConfig = {
+        ...buildDefaultWheelConfig(),
+        ...wheelConfig,
+        ...(payload.wheel_config || {}),
       }
 
       setChartSvg(payload.svg || '')
       setChartError('')
       setChartLoaded(true)
-      setWheelConfig({ ...WHEEL_DEFAULTS, ...payload.wheel_config })
-    } catch (error) {
-      if (seq !== requestSeq.current) return
+      setWheelConfig(nextConfig)
+      return true
+    } catch {
+      if (seq !== requestSeq.current) return false
       setChartError('couldn\'t reach the generator, try again')
+      return false
     } finally {
       if (seq === requestSeq.current) setChartLoading(false)
     }
-  }
+  }, [canGenerate, chartLoaded, values.date, values.time, values.lat, values.lon, wheelConfig])
 
   useEffect(() => {
     if (values.place.trim().length < 2) {
@@ -243,239 +155,141 @@ export default function Hero() {
     wheelChangeRef.current = false
 
     if (chartLoaded && canGenerate) {
-      const timer = window.setTimeout(() => generateChart(), 300)
+      const timer = window.setTimeout(() => {
+        generateChart()
+      }, 300)
       return () => window.clearTimeout(timer)
     }
-  }, [wheelConfig, chartLoaded, values.date, values.time, values.lat, values.lon])
+  }, [wheelConfig, chartLoaded, canGenerate, generateChart])
 
   const updateWheelConfig = (key, value) => {
     setWheelConfig((current) => ({ ...current, [key]: value }))
     wheelChangeRef.current = true
   }
 
-  const applyPreset = (preset) => {
-    setWheelConfig((current) => ({ ...current, ...preset }))
+  const handleSettingsUpdate = (patch) => {
+    setWheelConfig((current) => ({ ...current, ...patch }))
     wheelChangeRef.current = true
   }
 
-  const onSubmit = async (e) => {
+  const handleContinue = async (e) => {
     e.preventDefault()
     const valid = validateRequired()
     if (!valid) {
-      setSubmitted(false)
       const firstBad = errors.date ? dateRef : errors.time ? timeRef : placeRef
       firstBad.current?.focus()
       return
     }
-    setSubmitted(true)
-    await generateChart({ force: true })
+
+    setIsTransitioningOut(true)
+    const success = await generateChart({ force: true })
+    if (success) {
+      setPendingView('chart')
+    } else {
+      setIsTransitioningOut(false)
+      setPendingView(null)
+    }
   }
+
+  const handleTransitionEnd = () => {
+    if (isTransitioningOut && pendingView) {
+      setViewMode(pendingView)
+      setPendingView(null)
+      setIsTransitioningOut(false)
+    }
+  }
+
+  const handleCustomize = () => {
+    setViewMode('customize')
+  }
+
+  const handleBackToChart = () => {
+    setViewMode('chart')
+  }
+
+  const renderFormView = () => (
+    <div className={`hero-intro ${isTransitioningOut ? 'fade-out-up' : ''}`} onAnimationEnd={handleTransitionEnd}>
+      <div className="eyebrow mono">01 — synastral / astrology by kate<span className="caret">█</span></div>
+      <h1>
+        <span className="line">your <span className="strong">birth chart,</span></span>
+        <span className="line"><span className="ser">free &amp;</span></span>
+        <span className="line"><span className="strong">no strings.</span></span>
+      </h1>
+      <p className="tag">Enter the moment you were born, get your full natal wheel in the <b>Synastral house style</b> — houses, aspects, placements. Right here, right now.</p>
+
+      <form className="gen" id="chart-form" tabIndex={-1} ref={genRef} onPointerMove={onGenMove} onSubmit={handleContinue} noValidate>
+        <div className="gen-head">
+          <span className="t">✳ generate your chart</span>
+          <span className="free mono">free / 60 seconds</span>
+        </div>
+
+        <div className="birth-inputs">
+          <div>
+            <label htmlFor="g-date">date of birth</label>
+            <input id="g-date" name="birth-date" type="date" autoComplete="bday"
+              required ref={dateRef} value={values.date} onChange={setField('date')}
+              aria-invalid={errors.date ? 'true' : undefined}
+              aria-describedby={errors.date ? 'g-date-err' : undefined} />
+            {errors.date && <p className="field-err mono" id="g-date-err">{errors.date}</p>}
+          </div>
+          <div>
+            <label htmlFor="g-time">time of birth</label>
+            <input id="g-time" name="birth-time" type="time"
+              required ref={timeRef} value={values.time} onChange={setField('time')}
+              aria-invalid={errors.time ? 'true' : undefined}
+              aria-describedby={errors.time ? 'g-time-err' : undefined} />
+            {errors.time && <p className="field-err mono" id="g-time-err">{errors.time}</p>}
+          </div>
+          <div>
+            <label htmlFor="g-place">place of birth</label>
+            <input id="g-place" name="birth-place" type="text" autoComplete="address-level2" placeholder="city, country"
+              required ref={placeRef} value={values.place} onChange={setField('place')}
+              list="g-place-list"
+              aria-invalid={errors.place ? 'true' : undefined}
+              aria-describedby={errors.place ? 'g-place-err' : 'g-place-hint'} />
+            <datalist id="g-place-list">
+              {placeOptions.map((option) => (
+                <option key={`${option.label}-${option.lat}-${option.lon}`} value={option.label} />
+              ))}
+            </datalist>
+            {errors.place && <p className="field-err mono" id="g-place-err">{errors.place}</p>}
+            {!errors.place && values.place && !values.lat && !values.lon && (
+              <p className="field-err mono" id="g-place-hint">select one of the suggested places</p>
+            )}
+          </div>
+          <div className="continue-action">
+            <button type="submit" className="continue-inline" disabled={!canGenerate || chartLoading}>
+              {chartLoading ? 'generating…' : 'CONTINUE'}
+            </button>
+          </div>
+        </div>
+
+        {chartError && <div className="gen-alert mono">{chartError}</div>}
+      </form>
+    </div>
+  )
 
   return (
     <section className="hero" id="chart" aria-label="Birth chart generator">
       <Dither />
       <div className="hero-left">
-        <div className="eyebrow mono">01 — synastral / astrology by kate<span className="caret">█</span></div>
-        <h1>
-          <span className="line">your <span className="strong">birth chart,</span></span>
-          <span className="line"><span className="ser">free &amp;</span></span>
-          <span className="line"><span className="strong">no strings.</span></span>
-        </h1>
-        <p className="tag">Enter the moment you were born, get your full natal wheel in the <b>Synastral house style</b> — houses, aspects, placements. Right here, right now.</p>
-
-        <form className="gen" id="chart-form" tabIndex={-1} ref={genRef} onPointerMove={onGenMove} onSubmit={onSubmit} noValidate>
-          <div className="gen-head">
-            <span className="t">✳ generate your chart</span>
-            <span className="free mono">free / 60 seconds</span>
-          </div>
-
-          <EditorialStepper currentStep={currentStep} onStepClick={setCurrentStep} />
-
-          <div className="step-panels">
-            {currentStep === 1 && (
-              <div className="step-panel" data-step="1">
-                <div className="birth-inputs">
-                  <div>
-                    <label htmlFor="g-date">date of birth</label>
-                    <input id="g-date" name="birth-date" type="date" autoComplete="bday"
-                      required ref={dateRef} value={values.date} onChange={setField('date')}
-                      aria-invalid={errors.date ? 'true' : undefined}
-                      aria-describedby={errors.date ? 'g-date-err' : undefined} />
-                    {errors.date && <p className="field-err mono" id="g-date-err">{errors.date}</p>}
-                  </div>
-                  <div>
-                    <label htmlFor="g-time">time of birth</label>
-                    <input id="g-time" name="birth-time" type="time"
-                      required ref={timeRef} value={values.time} onChange={setField('time')}
-                      aria-invalid={errors.time ? 'true' : undefined}
-                      aria-describedby={errors.time ? 'g-time-err' : undefined} />
-                    {errors.time && <p className="field-err mono" id="g-time-err">{errors.time}</p>}
-                  </div>
-                  <div>
-                    <label htmlFor="g-place">place of birth</label>
-                    <input id="g-place" name="birth-place" type="text" autoComplete="address-level2" placeholder="city, country"
-                      required ref={placeRef} value={values.place} onChange={setField('place')}
-                      list="g-place-list"
-                      aria-invalid={errors.place ? 'true' : undefined}
-                      aria-describedby={errors.place ? 'g-place-err' : 'g-place-hint'} />
-                    <datalist id="g-place-list">
-                      {placeOptions.map((option) => (
-                        <option key={`${option.label}-${option.lat}-${option.lon}`} value={option.label} />
-                      ))}
-                    </datalist>
-                    {errors.place && <p className="field-err mono" id="g-place-err">{errors.place}</p>}
-                    {!errors.place && values.place && !values.lat && !values.lon && (
-                      <p className="field-err mono" id="g-place-hint">select one of the suggested places</p>
-                    )}
-                  </div>
-                  <div className="continue-action">
-                    <button type="button" className="continue-inline" onClick={handleContinueToSky} disabled={!canGenerate}>CONTINUE</button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {currentStep === 2 && (
-              <div className="step-panel" data-step="2">
-                <div className="knob-row">
-                  <span className="t">presets</span>
-                  <div className="preset-buttons">
-                    {Object.entries(PRESETS).map(([label, preset]) => (
-                      <button key={label} type="button" className="chip" onClick={() => applyPreset(preset)}>{label}</button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="running-scroll" />
-
-                <div className="knob-group">
-                  <span className="t">aspects</span>
-                  <RuledSlider
-                    label="max orb"
-                    min={1}
-                    max={12}
-                    step={0.5}
-                    value={wheelConfig.max_orb}
-                    onChange={(value) => updateWheelConfig('max_orb', value)}
-                  />
-                  <RuledSlider
-                    label="min footprint"
-                    min={0}
-                    max={20}
-                    step={0.5}
-                    value={wheelConfig.min_footprint}
-                    unit=""
-                    onChange={(value) => updateWheelConfig('min_footprint', value)}
-                  />
-                  <div className="toggle-row">
-                    <label className="circle-keyline-toggle">
-                      <input type="checkbox" checked={wheelConfig.orb_fade} onChange={(e) => updateWheelConfig('orb_fade', e.target.checked)} />
-                      <span className="circle-indicator" />
-                      <span className="toggle-label">orb fade</span>
-                    </label>
-                    <label className="circle-keyline-toggle">
-                      <input type="checkbox" checked={wheelConfig.aspect_hub} onChange={(e) => updateWheelConfig('aspect_hub', e.target.checked)} />
-                      <span className="circle-indicator" />
-                      <span className="toggle-label">aspect hub</span>
-                    </label>
-                    <label className="circle-keyline-toggle">
-                      <input type="checkbox" checked={wheelConfig.conj_arcs} onChange={(e) => updateWheelConfig('conj_arcs', e.target.checked)} />
-                      <span className="circle-indicator" />
-                      <span className="toggle-label">conj arcs</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="gen-action split">
-                  <button type="button" className="gen-btn secondary" onClick={() => setCurrentStep(1)}>← return to your birth</button>
-                  <button type="button" className="gen-btn" onClick={() => setCurrentStep(3)}>continue to your colors →</button>
-                </div>
-              </div>
-            )}
-
-            {currentStep === 3 && (
-              <div className="step-panel" data-step="3">
-                <div className="knob-group">
-                  <span className="t">colors</span>
-                  <div className="color-grid">
-                    {[
-                      ['ink', 'ink'],
-                      ['tint_fire', 'fire'],
-                      ['tint_earth', 'earth'],
-                      ['tint_air', 'air'],
-                      ['tint_water', 'water'],
-                      ['aspect_soft', 'soft'],
-                      ['aspect_hard', 'hard'],
-                      ['aspect_conj', 'conj'],
-                    ].map(([key, label]) => (
-                      <label className="color-label" key={key}>
-                        <span>{label}</span>
-                        <input type="color" value={wheelConfig[key]} onChange={(e) => updateWheelConfig(key, e.target.value)} />
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <details className="knob-fine" open>
-                  <summary>fine-tune</summary>
-                  <div className="knob-group">
-                    <span className="t">layout</span>
-                    <div className="grid2">
-                      <label>
-                        <span>glyph scale</span>
-                        <div className="range-control">
-                          <input type="range" min="0.6" max="1.6" step="0.05" value={wheelConfig.glyph_scale} onChange={(e) => updateWheelConfig('glyph_scale', Number(e.target.value))} />
-                          <output>{wheelConfig.glyph_scale.toFixed(2)}×</output>
-                        </div>
-                      </label>
-                      <label>
-                        <span>text scale</span>
-                        <div className="range-control">
-                          <input type="range" min="0.6" max="1.6" step="0.05" value={wheelConfig.text_scale} onChange={(e) => updateWheelConfig('text_scale', Number(e.target.value))} />
-                          <output>{wheelConfig.text_scale.toFixed(2)}×</output>
-                        </div>
-                      </label>
-                      <label>
-                        <span>line scale</span>
-                        <div className="range-control">
-                          <input type="range" min="0.5" max="2.0" step="0.05" value={wheelConfig.line_scale} onChange={(e) => updateWheelConfig('line_scale', Number(e.target.value))} />
-                          <output>{wheelConfig.line_scale.toFixed(2)}×</output>
-                        </div>
-                      </label>
-                      <label>
-                        <span>band width</span>
-                        <div className="range-control">
-                          <input type="range" min="0.6" max="1.4" step="0.05" value={wheelConfig.band_width} onChange={(e) => updateWheelConfig('band_width', Number(e.target.value))} />
-                          <output>{wheelConfig.band_width.toFixed(2)}×</output>
-                        </div>
-                      </label>
-                      <label>
-                        <span>core scale</span>
-                        <div className="range-control">
-                          <input type="range" min="0.7" max="1.1" step="0.05" value={wheelConfig.core_scale} onChange={(e) => updateWheelConfig('core_scale', Number(e.target.value))} />
-                          <output>{wheelConfig.core_scale.toFixed(2)}×</output>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-                </details>
-
-                <div className="running-scroll" />
-
-                {chartError && <div className="gen-alert mono">{chartError}</div>}
-
-                <div className="gen-action">
-                  <button className="gen-btn primary" type="submit" disabled={chartLoading}>{chartLoading ? 'generating…' : 'generate my chart →'}</button>
-                </div>
-              </div>
-            )}
-          </div>
-        </form>
+        {viewMode === 'form' && renderFormView()}
+        {viewMode === 'chart' && (
+          <ChartView chartSvg={chartSvg} chartLoading={chartLoading} chartError={chartError} chartLoaded={chartLoaded} onCustomize={handleCustomize} />
+        )}
+        {viewMode === 'customize' && (
+          <CustomizePanel settings={wheelConfig} onUpdateSettings={handleSettingsUpdate} onBack={handleBackToChart} />
+        )}
       </div>
 
       <div className="hero-right" ref={rightRef}>
         <div className="blob b1"></div><div className="blob b2"></div>
         <div className="print-frame">
+          {chartSvg ? (
+            <div className="chart-output" dangerouslySetInnerHTML={{ __html: chartSvg }} />
+          ) : (
+            <div className="chart-placeholder">the wheel appears here after you generate it</div>
+          )}
           {chartLoaded && (
             <a className="btn poster-btn" href="/shop">Get this as a print-quality poster →</a>
           )}
