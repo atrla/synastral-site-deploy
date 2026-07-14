@@ -1,0 +1,104 @@
+*{margin:0;padding:0;box-sizing:border-box}
+@media(prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+html{background:#EBE7C4}
+body{background:var(--paper);color:var(--ink);position:relative;
+  font-family:"Crimson Pro",Georgia,serif;font-size:17px;overflow-x:hidden}
+@media(min-width:75em){
+  body{width:min(80vw,var(--content-max));margin-inline:auto;
+    border-inline:1px solid rgba(10,51,35,.2)}
+}
+h1,h2,h3,.big,.logo,.upsell h3{font-family:"Gloock",Georgia,serif;font-weight:400}
+h1 b,h1 .strong,h2 b,h3 b,.big b{font-weight:400}
+body::before{content:"";position:absolute;inset:0 var(--gutter);pointer-events:none;z-index:98;
+  border-left:1px dashed rgba(138,148,200,.3);border-right:1px dashed rgba(138,148,200,.3)}
+::selection{background:var(--cobalt);color:var(--paper)}
+h1,h2,h3{text-wrap:balance}
+p{text-wrap:pretty}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--cobalt);outline-offset:3px}
+
+/* skip link — first focusable element, hidden until focused */
+.skip-link{position:absolute;left:12px;top:-60px;z-index:200;background:var(--cobalt);color:var(--paper);
+  padding:12px 20px;font-size:12px;letter-spacing:.08em;text-decoration:none;transition:top .2s ease}
+.skip-link:focus{top:12px;outline:2px solid var(--paper);outline-offset:3px}
+
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:99;opacity:.5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");}
+
+/* ---------- nav ---------- */
+nav{display:flex;justify-content:space-between;align-items:center;padding:1rem var(--gutter);
+  position:sticky;top:0;z-index:10;
+  background:rgba(247,244,213,.55);backdrop-filter:blur(16px) saturate(1.3);
+  border-bottom:1px dashed var(--sky)}
+nav .logo{font-weight:700;letter-spacing:-.03125rem;font-size:1.1875rem;color:var(--cobalt)}
+nav .logo .glyph{color:var(--lilac);display:inline-block;animation:spinstep 17s steps(6) infinite}
+nav ul{display:flex;gap:1.75rem;list-style:none;font-size:.75rem;
+  font-family:"DM Mono",monospace}
+.nav-toggle{display:none;border:0;background:none;color:var(--cobalt);font:inherit;font-size:.6875rem;
+  letter-spacing:.14em;text-transform:uppercase;align-items:center;gap:.625rem;cursor:pointer}
+.nav-toggle-icon{position:relative;width:1.125rem;height:.75rem;display:inline-block}
+.nav-toggle-icon::before,.nav-toggle-icon::after{content:"";position:absolute;left:0;width:100%;height:1px;
+  background:currentColor;transition:transform .2s ease,top .2s ease}
+.nav-toggle-icon::before{top:.125rem}.nav-toggle-icon::after{top:.625rem}
+.nav-open .nav-toggle-icon::before{top:.375rem;transform:rotate(45deg)}
+.nav-open .nav-toggle-icon::after{top:.375rem;transform:rotate(-45deg)}
+nav a{color:var(--ink);text-decoration:none;letter-spacing:.08em;text-transform:lowercase;
+  position:relative}
+nav a:not(.ext)::after{content:"";position:absolute;left:0;bottom:-4px;height:1px;width:100%;
+  background:var(--cobalt);transform:scaleX(0);transform-origin:left;transition:transform .25s ease}
+nav a:hover{color:var(--cobalt)}
+nav a:not(.ext):hover::after{transform:scaleX(1)}
+nav .ext::after{content:" ↗";color:var(--sky)}
+
+/* ---------- data strip ---------- */
+.datastrip{display:flex;justify-content:space-between;gap:.75rem 1.75rem;flex-wrap:wrap;
+  padding:.4375rem var(--gutter);border-bottom:1px dashed var(--sky);font-size:.625rem;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--sky-ink);
+  background:rgba(255,255,255,.3)}
+.datastrip .accent{color:var(--cobalt)}
+
+/* ---------- section chrome (shared by all <section> elements) ---------- */
+section{padding:var(--section-space) var(--gutter);position:relative}
+section::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:-1;
+  background:radial-gradient(40rem circle at 88% 8%,rgba(183,224,234,.4),transparent 70%),
+    radial-gradient(32.5rem circle at 6% 92%,rgba(158,160,222,.25),transparent 70%)}
+section::after{content:"";position:absolute;inset:clamp(.75rem,2vw,1.25rem);pointer-events:none;
+  --c:rgba(138,148,200,.65);
+  background:
+    linear-gradient(var(--c),var(--c)) left top/1px 12px,
+    linear-gradient(var(--c),var(--c)) left top/12px 1px,
+    linear-gradient(var(--c),var(--c)) right top/1px 12px,
+    linear-gradient(var(--c),var(--c)) right top/12px 1px,
+    linear-gradient(var(--c),var(--c)) left bottom/1px 12px,
+    linear-gradient(var(--c),var(--c)) left bottom/12px 1px,
+    linear-gradient(var(--c),var(--c)) right bottom/1px 12px,
+    linear-gradient(var(--c),var(--c)) right bottom/12px 1px;
+  background-repeat:no-repeat}
+.star-rule{display:flex;align-items:center;gap:1.125rem;margin-bottom:1.5rem}
+.star-rule::before,.star-rule::after{content:"";flex:1;height:1px;background:rgba(10,51,35,.22)}
+.star-rule span{display:inline-block;font-size:.875rem;line-height:1;color:var(--lilac);
+  animation:spinstep var(--dur,30s) steps(12) infinite;animation-direction:var(--dir,normal)}
+.scatter{position:absolute;pointer-events:none;color:var(--lilac);opacity:.55;line-height:1;
+  animation:spinstep var(--dur,44s) steps(8) infinite;animation-direction:var(--dir,normal)}
+.kicker{font-size:.6875rem;letter-spacing:.25em;text-transform:uppercase;color:var(--sky-ink);
+  font-family:"Young Serif",Georgia,serif;margin-bottom:1.125rem}
+.kicker::before{content:"✳ ";color:var(--cobalt)}
+h2{font-size:clamp(1.875rem,4vw,3.375rem);letter-spacing:-.01em;font-weight:400;color:var(--cobalt)}
+h2 .lite{color:var(--sky)}
+
+/* ---------- shared cross-component fixes ---------- */
+/* grid-item overflow fix, used by hero/about/shop-band grid containers */
+.hero>*,.about>*,.shop-band>*{min-width:0}
+/* consistent photo desaturation treatment on the two "printed" images */
+.print-frame img,.shop-visual img{filter:hue-rotate(12deg) saturate(.78)}
+
+@media(max-width:63.99em){
+  nav{flex-wrap:wrap;row-gap:.5rem}
+  nav .nav-toggle{display:inline-flex}
+  nav ul{display:none;flex-basis:100%;flex-direction:column;gap:0;padding:.75rem 0 .25rem}
+  nav.nav-open ul{display:flex}
+  nav ul li{width:100%}
+  nav ul a{display:block;padding:.625rem 0}
+  body::before{display:none}
+  .datastrip{justify-content:center;text-align:center}
+  .datastrip .ds-hide{display:none}
+}

@@ -1,0 +1,41 @@
+:root{
+  /* atelier astra — ink green · antique paper · moss · periwinkle */
+  --cobalt:#0A3323; --sky:#8A94C8; --sky-ink:#66753F; --pale:#B7E0EA; --paper:#F7F4D5; --ink:#173626;
+  --lilac:#9EA0DE; --peach:#839958; --moss:#839958; --rosy:#D3968C;
+  --gutter:clamp(1rem,4vw,2.5rem);
+  --section-space:clamp(2.5rem,5vw,4rem);
+  --content-max:87.5rem;
+}
+
+/* ---------- typography utilities ---------- */
+.mono{font-family:"DM Mono","Courier New",monospace;font-variant-numeric:tabular-nums}
+.ser{font-family:"Pinyon Script",cursive;font-style:normal;font-weight:400;
+  letter-spacing:0;font-size:1.18em;color:var(--moss)}
+
+/* ---------- button utility (shared across hero / upsell / about / shop) ---------- */
+.btn{display:inline-block;background:var(--cobalt);color:var(--paper);padding:.9375rem 2rem;border:none;
+  font-size:.6875rem;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;text-decoration:none;
+  font-family:"Young Serif",Georgia,serif;transition:transform .15s,box-shadow .15s}
+.btn:hover{transform:translate(-.125rem,-.125rem);box-shadow:.25rem .25rem 0 rgba(10,51,35,.3)}
+.btn:active{transform:translate(0,0) scale(.985);box-shadow:.0625rem .0625rem 0 rgba(10,51,35,.25)}
+
+/* ---------- animations ---------- */
+@keyframes rise{from{opacity:0;transform:translateY(1.625rem)}to{opacity:1;transform:none}}
+@keyframes spinstep{to{transform:rotate(360deg)}}
+@keyframes floaty{0%,100%{transform:translateY(var(--iy,0px))}50%{transform:translateY(calc(var(--iy,0px) - 14px))}}
+@keyframes breathe{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.12);opacity:1}}
+@keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(.375rem)}}
+
+/* ---------- scroll-reveal ---------- */
+.reveal{opacity:0;transform:translateY(1.875rem);transition:opacity .8s ease,transform .8s ease}
+.reveal.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+  .reveal{opacity:1;transform:none}
+}
+
+/* ---------- blur-text — words blur/rise into place ---------- */
+.blur-text .bt{display:inline-block;opacity:0;filter:blur(.625rem);transform:translateY(.625rem);
+  transition:opacity .55s ease,filter .55s ease,transform .55s ease}
+.blur-text.on .bt{opacity:1;filter:none;transform:none}

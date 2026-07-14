@@ -1,0 +1,28 @@
+/* ---------- who am i · constellation plate above the sketch ---------- */
+.about{display:grid;grid-template-columns:1fr;gap:2rem;align-items:start;margin-top:1.75rem}
+.portrait,.about-copy{display:flex;flex-direction:column;align-items:center}
+.portrait{position:relative;padding-top:1.25rem;padding-bottom:0;gap:.75rem;max-width:32.5rem;width:100%}
+.const-plate{position:relative;width:100%;height:9.375rem;margin-bottom:.5rem;overflow:hidden}
+.const-plate .const-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.portrait img{width:100%;display:block;mix-blend-mode:multiply;margin:0;padding:0}
+.portrait .caption{position:static;align-self:flex-end;font-size:.625rem;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--sky-ink)}
+.about-copy p{font-size:1rem;line-height:1.75;color:#3E4B36;margin-bottom:1.125rem}
+.placements{display:flex;gap:.625rem;flex-wrap:wrap;margin-bottom:1.875rem}
+.placements span{font-size:.625rem;letter-spacing:.12em;font-family:"DM Mono",monospace;
+  padding:.375rem .75rem;border:1px solid var(--sky);
+  color:var(--cobalt);border-radius:999px;background:rgba(255,255,255,.5);backdrop-filter:blur(6px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.8);transition:transform .2s,box-shadow .2s;cursor:default}
+.placements span:hover{transform:translateY(-2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 4px 10px rgba(138,148,200,.25)}
+.marginalia{list-style:none;display:flex;flex-direction:column;gap:.625rem;margin:1rem 0;padding-top:1rem;border-top:1px dashed var(--sky);
+  font-size:0.8em;color:var(--sky-ink);font-family:"Crimson Pro",Georgia,serif;font-style:italic}
+.marginalia li::before{content:"✧ ";color:var(--sky)}
+
+@media(min-width:64em){
+  .about{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:clamp(2rem,5vw,3rem)}
+  .portrait .caption{position:absolute;right:-.5rem;bottom:1.5rem;transform:rotate(90deg);transform-origin:bottom right}
+}
+
+@media(max-width:39.99em){
+  .const-plate{height:7.5rem}
+}

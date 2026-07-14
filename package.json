@@ -1,0 +1,27 @@
+{
+  "name": "synastral",
+  "private": true,
+  "version": "6.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "node scripts/generate-sitemap.mjs && vite build && node scripts/prerender.mjs",
+    "preview": "vite preview",
+    "validate:schema": "node scripts/validate-schema.mjs"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@fontsource/crimson-pro": "^5.2.8",
+    "@fontsource/dm-mono": "^5.2.7",
+    "@fontsource/gloock": "^5.2.8",
+    "@fontsource/pinyon-script": "^5.2.8",
+    "@fontsource/young-serif": "^5.2.7",
+    "@vitejs/plugin-react": "^4.3.4",
+    "sharp": "^0.35.3",
+    "vite": "^8.1.4",
+    "vite-plugin-compression": "^0.5.1"
+  }
+}

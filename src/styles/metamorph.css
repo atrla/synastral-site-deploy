@@ -1,0 +1,12 @@
+/* ---------- butterfly ---------- */
+.metamorph{position:relative;padding:clamp(2rem,5vw,2.25rem) var(--gutter) 1.5rem;border-top:1px dashed var(--sky);
+  display:grid;grid-template-columns:1fr;justify-items:center;gap:1rem;text-align:center;overflow:hidden}
+.metamorph img{width:min(23.75rem,64vw);display:block;mix-blend-mode:multiply;opacity:.92;
+  animation:floaty 9s ease-in-out infinite}
+.metamorph .lbl,.metamorph .lbl2{position:static;font-size:.75rem;color:var(--sky-ink)}
+
+@media(min-width:64em){
+  .metamorph{display:flex;justify-content:center;text-align:initial}
+  .metamorph .lbl{position:absolute;left:var(--gutter);top:1.875rem}
+  .metamorph .lbl2{position:absolute;right:var(--gutter);bottom:1.625rem;text-align:right}
+}

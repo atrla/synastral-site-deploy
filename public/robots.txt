@@ -1,0 +1,22 @@
+# robots.txt for synastral.com
+# Full crawl access for all bots, including AI/LLM crawlers used for
+# AI-answer and assistant surfaces (ChatGPT, Claude, Perplexity, Google's
+# AI features). Synastral's chart generator is free with no account/email
+# required, so we want AI answer engines to be able to read and cite it.
+
+User-agent: *
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+Sitemap: https://synastral.com/sitemap.xml

@@ -1,0 +1,42 @@
+# Netlify / Cloudflare Pages header rules (WP6).
+#
+# This file format (`_headers`, path-prefix + indented "Header: value"
+# lines) is Netlify- and Cloudflare Pages-specific. Other static hosts use
+# different mechanisms — e.g. Vercel wants a `headers` array in
+# `vercel.json`, GitHub Pages has no header config at all, S3/CloudFront
+# needs cache-control set on the S3 objects or in a CloudFront response
+# headers policy, and most VPS/nginx setups configure this in the nginx
+# server block. If deploying anywhere other than Netlify/Cloudflare Pages,
+# port these same rules to that host's config format.
+#
+# Vite content-hashes every file under /assets/ (images, fonts, CSS, JS —
+# see src/assets/* imports and vite.config.js's default build output), so
+# those URLs are safe to cache forever and immutably: a content change
+# always produces a new filename, never the same URL with different bytes.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# HTML entry points should always be revalidated so deploys show up
+# immediately — index.html references the hashed asset URLs above, so it
+# must never be served stale from a shared/browser cache.
+/
+  Cache-Control: no-cache
+
+/index.html
+  Cache-Control: no-cache
+
+/404.html
+  Cache-Control: no-cache
+
+# Crawl-surface files (WP10) change over time (sitemap lastmod, robots
+# rules, llms.txt) and live at fixed, well-known URLs — keep them
+# revalidated rather than aggressively cached so crawlers see updates
+# promptly.
+/robots.txt
+  Cache-Control: no-cache
+
+/sitemap.xml
+  Cache-Control: no-cache
+
+/llms.txt
+  Cache-Control: no-cache
