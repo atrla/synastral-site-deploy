@@ -2,9 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import Dither from './Dither.jsx'
 import { normalizePlaceOption, resolvePlaceSelection } from '../utils/placeOptions.js'
 import '../styles/hero.css'
-import iris1000 from '../assets/08-iris-1000.webp?url'
-import chartWheel640 from '../assets/03-chart-wheel-640.webp?url'
-import chartWheel1280 from '../assets/03-chart-wheel-1280.webp?url'
 
 const API_BASE = (import.meta.env.VITE_CHART_API_BASE || '').trim()
 const buildApiUrl = (path) => {
@@ -112,7 +109,6 @@ function RuledSlider({ label, min, max, step, value, unit = '°', onChange }) {
 
 export default function Hero() {
   const rightRef = useRef(null)
-  const irisRef = useRef(null)
   const genRef = useRef(null)
   const dateRef = useRef(null)
   const timeRef = useRef(null)
@@ -274,26 +270,6 @@ export default function Hero() {
     setSubmitted(true)
     await generateChart({ force: true })
   }
-
-  const chartContent = chartLoaded ? (
-    <div className="chart-svg" dangerouslySetInnerHTML={{ __html: chartSvg }} />
-  ) : (
-    <img
-      src={chartWheel640}
-      srcSet={`${chartWheel640} 640w, ${chartWheel1280} 1280w`}
-      sizes="(min-width: 64em) 38vw, calc(100vw - 2rem)"
-      width="640" height="640"
-      alt="Example natal chart wheel with houses and aspects, Synastral house style"
-      fetchpriority="high" decoding="async"
-      style={{
-        width: '100%',
-        opacity: 0.2 + (formCompleted ? 0.3 : 0),
-        transition: 'opacity 0.6s ease',
-        filter: `saturate(${formCompleted ? 0.8 : 0.3})`,
-      }}
-      onError={(e) => { e.currentTarget.style.minHeight = '300px' }}
-    />
-  )
 
   return (
     <section className="hero" id="chart" aria-label="Birth chart generator">
@@ -499,20 +475,7 @@ export default function Hero() {
 
       <div className="hero-right" ref={rightRef}>
         <div className="blob b1"></div><div className="blob b2"></div>
-        <div className="hero-iris" ref={irisRef}>
-          <img
-            src={iris1000}
-            width="1000" height="1000"
-            alt=""
-            loading="lazy" decoding="async"
-            onError={(e) => { e.currentTarget.parentNode.style.display = 'none' }}
-          />
-        </div>
         <div className="print-frame">
-          <div className="chart-output">
-            {chartContent}
-          </div>
-          <div className="plabel mono"><span>synastral — natal record</span><span>fig. 01</span></div>
           {chartLoaded && (
             <a className="btn poster-btn" href="/shop">Get this as a print-quality poster →</a>
           )}
