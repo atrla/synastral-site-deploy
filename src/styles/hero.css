@@ -55,6 +55,32 @@ h1 .line{display:block}
 .gen .fine{margin-top:.875rem;font-size:.6875rem;line-height:1.7;color:#5A6547;
   font-family:"DM Mono",monospace}
 .gen .fine::before{content:"> ";color:var(--moss)}
+.gen-knobs{margin-top:1.25rem}
+.gen-knobs .knob-row{display:flex;flex-wrap:wrap;align-items:center;gap:.75rem;margin-bottom:1rem}
+.gen-knobs .knob-row .t{font-size:.6875rem;letter-spacing:.22em;text-transform:uppercase;color:var(--sky-ink)}
+.preset-buttons{display:flex;flex-wrap:wrap;gap:.5rem}
+.chip{border:1px solid var(--sky);background:rgba(255,255,255,.65);color:var(--ink);padding:.55rem .8rem;font-size:.875rem;cursor:pointer}
+.chip:hover{border-color:var(--cobalt);background:rgba(255,255,255,.9)}
+.knob-group{margin-top:1rem}
+.knob-group .t{display:block;margin-bottom:.75rem;font-size:.6875rem;letter-spacing:.22em;text-transform:uppercase;color:var(--sky-ink)}
+.knob-group .grid2{display:grid;grid-template-columns:1fr;gap:1rem .75rem}
+.knob-group label{display:block;font-size:.875rem;color:var(--ink)}
+.knob-group label span{display:block;font-size:.75rem;text-transform:uppercase;letter-spacing:.15em;color:#5A6547;margin-bottom:.35rem}
+.range-control{display:grid;grid-template-columns:auto minmax(2.7rem,1fr);gap:.75rem;align-items:center}
+.range-control input{width:100%}
+.range-control output{font-family:"DM Mono",monospace;color:var(--ink);font-size:.875rem;text-align:right}
+.checkbox-label{display:flex;align-items:center;gap:.5rem;font-size:.875rem;color:var(--ink)}
+.checkbox-label input{margin:0}
+.knob-fine summary{cursor:pointer;font-size:.875rem;font-weight:600;list-style:none;margin-bottom:.85rem}
+.knob-fine summary::-webkit-details-marker{display:none}
+.color-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.9rem}
+.color-label{display:flex;align-items:center;justify-content:space-between;gap:.75rem;font-size:.875rem;color:var(--ink)}
+.color-label input{width:2.5rem;height:2.5rem;border:1px solid var(--sky);background:#fff;padding:0;cursor:pointer}
+.gen-alert{margin-top:1rem;padding:1rem 1rem .85rem;border:1px solid rgba(138,148,200,.35);background:rgba(255,247,239,.75);color:#7C2F1C}
+.gen-action{display:grid;gap:.85rem}
+.poster-btn{display:inline-flex;align-items:center;gap:.5rem;margin-top:1rem;padding:.9rem 1rem;font-size:.9rem;text-decoration:none;white-space:nowrap}
+.chart-output{width:100%;max-width:100%;aspect-ratio:1/1;display:grid;place-items:center;overflow:hidden}
+.chart-output svg{width:100%;height:100%}
 
 /* hero right: chart preview as a PRINT, iris behind */
 .hero-right{position:relative;z-index:1;transform:translateY(var(--py,0px))}
