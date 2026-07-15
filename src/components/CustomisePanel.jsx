@@ -90,7 +90,7 @@ export default function CustomisePanel({ settings, visualSettings, onUpdateSetti
   }
 
   return (
-    <div className="customise-panel" id="chart-customise-panel" role="dialog" aria-label="Chart customisation drawer" aria-modal="false">
+    <div className="customise-panel" id="chart-customise-panel" role="dialog" aria-label="Chart customisation panel" aria-modal="false">
       <div className="customise-panel-head">
         <p className="t">customise</p>
         <div className="customise-panel-actions">

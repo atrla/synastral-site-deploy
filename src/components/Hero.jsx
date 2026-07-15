@@ -31,16 +31,11 @@ const DEFAULT_VISUAL_SETTINGS = {
 }
 
 const RESET_TRANSITION_MS = 260
+const STAGE_TRANSITION_MS = 360
 
 export default function Hero() {
   const heroRef = useRef(null)
-  const rightRef = useRef(null)
   const genRef = useRef(null)
-  const titleRef = useRef(null)
-  const skyRef = useRef(null)
-  const ditherRef = useRef(null)
-  const circleWrapRef = useRef(null)
-  const circleRef = useRef(null)
   const printChartRef = useRef(null)
   const dateRef = useRef(null)
   const timeRef = useRef(null)
@@ -68,8 +63,7 @@ export default function Hero() {
   const visualPatchRef = useRef({})
   const visualPulseRef = useRef('frame')
   const chartDebounceRef = useRef(null)
-  const flipFirstRectRef = useRef(null)
-  const activeTransitionRef = useRef({ animations: [], safetyTimer: null })
+  const stageTimerRef = useRef(null)
   const resetTimerRef = useRef(null)
 
   const onGenMove = (e) => {
@@ -226,141 +220,7 @@ export default function Hero() {
   useEffect(() => () => {
     if (visualDebounceRef.current) window.clearTimeout(visualDebounceRef.current)
     if (chartDebounceRef.current) window.clearTimeout(chartDebounceRef.current)
-    if (resetTimerRef.current) window.clearTimeout(resetTimerRef.current)
-  }, [])
-
-  const playCinematicTransition = useCallback(() => {
-    if (viewMode !== 'generating') return
-
-    const first = flipFirstRectRef.current
-    const gen = genRef.current
-    const sky = skyRef.current
-    const dither = ditherRef.current
-    const title = titleRef.current
-    const circleWrap = circleWrapRef.current
-    const circle = circleRef.current
-    const printChart = printChartRef.current
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
-    const finish = () => {
-      const { safetyTimer } = activeTransitionRef.current
-      if (safetyTimer) window.clearTimeout(safetyTimer)
-      activeTransitionRef.current = { animations: [], safetyTimer: null }
-      flipFirstRectRef.current = null
-      setViewMode('result')
-      setResultEntered(true)
-    }
-
-    if (reducedMotion || !gen?.animate) {
-      finish()
-      return
-    }
-
-    const EASE_CORE = 'cubic-bezier(0.4, 0, 0.2, 1)'
-
-    const animations = []
-    const addAnimation = (el, frames, options) => {
-      if (!el?.animate) return null
-      const animation = el.animate(frames, { fill: 'both', ...options })
-      animations.push(animation)
-      return animation
-    }
-
-    // Cinematic reveal timeline (1500 ms total):
-    // 0-300 ms: form container scales to 0.95 and fades slightly
-    // 300-900 ms: background transitions dark/star field -> light/dither
-    // 400-1200 ms: circular outline draw animation appears on chart side
-    // 800-1400 ms: form transforms into compact left-side edit panel position
-    // 1000-1500 ms: chart fades/scales in and replaces outline
-
-    addAnimation(sky, [
-      { opacity: 0.92 },
-      { opacity: 0.92, offset: 0.2 },
-      { opacity: 0, offset: 0.6 },
-      { opacity: 0, offset: 1 },
-    ], { duration: 1500, easing: 'ease-in-out' })
-
-    addAnimation(dither, [
-      { opacity: 0.08 },
-      { opacity: 0.08, offset: 0.2 },
-      { opacity: 0.34, offset: 0.6 },
-      { opacity: 0.34, offset: 1 },
-    ], { duration: 1500, easing: 'ease-in-out' })
-
-    addAnimation(title, [
-      { opacity: 1, transform: 'translateY(0)' },
-      { opacity: 0, transform: 'translateY(-20px)' },
-    ], { duration: 600, easing: EASE_CORE })
-
-    if (first) {
-      const last = gen.getBoundingClientRect()
-      const dx = first.left - last.left
-      const dy = first.top - last.top
-      const sx = first.width / Math.max(last.width, 1)
-      const sy = first.height / Math.max(last.height, 1)
-      gen.style.transformOrigin = 'top left'
-      addAnimation(gen, [
-        { transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`, opacity: 1 },
-        { transform: `translate(${dx}px, ${dy}px) scale(${sx * 0.95}, ${sy * 0.95})`, opacity: 0.88, offset: 0.2 },
-        { transform: `translate(${dx}px, ${dy}px) scale(${sx * 0.95}, ${sy * 0.95})`, opacity: 0.88, offset: 8 / 15 },
-        { transform: 'translate(0, 0) scale(1, 1)', opacity: 1, offset: 14 / 15 },
-        { transform: 'translate(0, 0) scale(1, 1)', opacity: 1 },
-      ], { duration: 1500, easing: EASE_CORE })
-    }
-
-    addAnimation(circleWrap, [
-      { opacity: 0, transform: 'translateY(10px) scale(0.96)' },
-      { opacity: 0, transform: 'translateY(10px) scale(0.96)', offset: 4 / 15 },
-      { opacity: 1, transform: 'translateY(0) scale(1)', offset: 1 / 3 },
-      { opacity: 1, transform: 'translateY(0) scale(1)', offset: 4 / 5 },
-      { opacity: 0, transform: 'translateY(-6px) scale(1.01)', offset: 1 },
-    ], { duration: 1500, easing: EASE_CORE })
-
-    addAnimation(circle, [
-      { strokeDashoffset: 1 },
-      { strokeDashoffset: 1, offset: 4 / 15 },
-      { strokeDashoffset: 0, offset: 4 / 5 },
-      { strokeDashoffset: 0, offset: 1 },
-    ], { duration: 1500, easing: 'linear' })
-
-    addAnimation(printChart, [
-      { opacity: 0, transform: 'scale(0.985)' },
-      { opacity: 0, transform: 'scale(0.985)', offset: 2 / 3 },
-      { opacity: 1, transform: 'scale(1)', offset: 1 },
-    ], { duration: 1500, easing: EASE_CORE })
-
-    const longestAnimation = animations.reduce((longest, animation) => {
-      const timing = animation.effect?.getTiming?.() || {}
-      const duration = Number(timing.duration) || 0
-      const delay = Number(timing.delay) || 0
-      const currentTotal = duration + delay
-      const longestTiming = longest.effect?.getTiming?.() || {}
-      const longestTotal = (Number(longestTiming.duration) || 0) + (Number(longestTiming.delay) || 0)
-      return currentTotal >= longestTotal ? animation : longest
-    }, animations[0])
-
-    let finished = false
-    const finishOnce = () => {
-      if (finished) return
-      finished = true
-      finish()
-    }
-
-    const safetyTimer = window.setTimeout(finishOnce, 1500)
-    activeTransitionRef.current = { animations, safetyTimer }
-    longestAnimation?.finished.then(finishOnce).catch(finishOnce)
-  }, [viewMode])
-
-  useEffect(() => {
-    if (viewMode !== 'generating') return undefined
-    const raf = window.requestAnimationFrame(playCinematicTransition)
-    return () => window.cancelAnimationFrame(raf)
-  }, [playCinematicTransition, viewMode])
-
-  useEffect(() => () => {
-    const { animations, safetyTimer } = activeTransitionRef.current
-    animations.forEach((animation) => animation.cancel())
-    if (safetyTimer) window.clearTimeout(safetyTimer)
+    if (stageTimerRef.current) window.clearTimeout(stageTimerRef.current)
     if (resetTimerRef.current) window.clearTimeout(resetTimerRef.current)
   }, [])
 
@@ -377,15 +237,13 @@ export default function Hero() {
       chartDebounceRef.current = null
     }
 
-    const { animations, safetyTimer } = activeTransitionRef.current
-    animations.forEach((animation) => animation.cancel())
-    if (safetyTimer) window.clearTimeout(safetyTimer)
-    activeTransitionRef.current = { animations: [], safetyTimer: null }
+    if (stageTimerRef.current) {
+      window.clearTimeout(stageTimerRef.current)
+      stageTimerRef.current = null
+    }
 
     visualPatchRef.current = {}
     visualPulseRef.current = 'frame'
-    flipFirstRectRef.current = null
-
     setErrors({})
     setPlaceOptions([])
     setPlacesLoading(false)
@@ -431,9 +289,14 @@ export default function Hero() {
 
     const success = await generateChart({ force: true })
     if (success) {
-      flipFirstRectRef.current = genRef.current?.getBoundingClientRect() || null
       setResultEntered(false)
       setViewMode('generating')
+      if (stageTimerRef.current) window.clearTimeout(stageTimerRef.current)
+      stageTimerRef.current = window.setTimeout(() => {
+        setViewMode('result')
+        setResultEntered(true)
+        stageTimerRef.current = null
+      }, STAGE_TRANSITION_MS)
     }
   }
 
@@ -445,9 +308,9 @@ export default function Hero() {
     setViewMode('result')
   }
 
-  const renderFormView = () => (
-    <div className="hero-intro">
-      <div className="hero-title" ref={titleRef}>
+  const renderHeroCopy = () => (
+    <div className="hero-intro hero-copy-block">
+      <div className="hero-title">
       <div className="eyebrow mono">01 &mdash; synastral / astrology by kate<span className="caret">&#9608;</span></div>
       <h1>
         <span className="line">your <span className="strong">birth chart,</span></span>
@@ -455,10 +318,12 @@ export default function Hero() {
         <span className="line"><span className="strong">no strings.</span></span>
       </h1>
       <p className="tag">Enter the moment you were born, get your full natal wheel in the <b>Synastral house style</b> &mdash; houses, aspects, placements. Right here, right now.</p>
-
       </div>
+    </div>
+  )
 
-      <form className="gen" id="chart-form" tabIndex={-1} ref={genRef} onPointerMove={onGenMove} onSubmit={handleContinue} noValidate>
+  const renderInputForm = (className = '') => (
+      <form className={`gen${className ? ` ${className}` : ''}`} id="chart-form" tabIndex={-1} ref={genRef} onPointerMove={onGenMove} onSubmit={handleContinue} noValidate>
         <div className="gen-head">
           <span className="t">&#10035; generate your chart</span>
           <span className="free mono">free / 60 seconds</span>
@@ -507,40 +372,6 @@ export default function Hero() {
 
         {chartError && <div className="gen-alert mono">{chartError}</div>}
       </form>
-    </div>
-  )
-
-  const renderGeneratingView = () => (
-    <div className="hero-intro">
-      <div className="hero-title" ref={titleRef}>
-        <div className="eyebrow mono">01 &mdash; synastral / astrology by kate<span className="caret">&#9608;</span></div>
-        <h1>
-          <span className="line">your <span className="strong">birth chart,</span></span>
-          <span className="line"><span className="ser">free &amp;</span></span>
-          <span className="line"><span className="strong">no strings.</span></span>
-        </h1>
-        <p className="tag">Enter the moment you were born, get your full natal wheel in the <b>Synastral house style</b> &mdash; houses, aspects, placements. Right here, right now.</p>
-      </div>
-
-      <ChartView
-        chartSvg={chartSvg}
-        chartLoading={chartLoading}
-        chartError={chartError}
-        chartLoaded={chartLoaded}
-        onCustomise={handleCustomise}
-        onReturnToInput={handleReturnToInput}
-        panelRef={genRef}
-        outputClassName={outputClassName}
-        outputStyle={outputStyle}
-        pulseGroup={previewPulseGroup}
-        pulseNonce={previewPulseNonce}
-        showPlacements={visualSettings.show_placements}
-        showAspects={visualSettings.show_aspects}
-        exportFormat={visualSettings.export_format}
-        exportResolution={visualSettings.export_resolution}
-        showShimmer={Boolean(chartSvg) && chartLoading}
-      />
-    </div>
   )
 
   const outputClassName = `chart-output theme-${visualSettings.theme} bg-${visualSettings.background} ${visualSettings.show_placements ? 'show-placements' : 'hide-placements'} ${visualSettings.show_aspects ? 'show-aspects' : 'hide-aspects'}`
@@ -557,35 +388,40 @@ export default function Hero() {
       aria-label="Birth chart generator"
       ref={heroRef}
     >
-      <div className="cinematic-sky" ref={skyRef} aria-hidden="true"></div>
-      <div className="dither-shell" ref={ditherRef} aria-hidden="true">
+      <div className="cinematic-sky" aria-hidden="true"></div>
+      <div className="dither-shell" aria-hidden="true">
         <Dither />
       </div>
       <div className="hero-left">
-        {viewMode === 'input' && renderFormView()}
-        {viewMode === 'generating' && renderGeneratingView()}
-        {viewMode === 'result' && (
-          <ChartView
-            chartSvg={chartSvg}
-            chartLoading={chartLoading}
-            chartError={chartError}
-            chartLoaded={chartLoaded}
-            onCustomise={handleCustomise}
-            onReturnToInput={handleReturnToInput}
-            panelRef={genRef}
-            outputClassName={outputClassName}
-            outputStyle={outputStyle}
-            pulseGroup={previewPulseGroup}
-            pulseNonce={previewPulseNonce}
-            showPlacements={visualSettings.show_placements}
-            showAspects={visualSettings.show_aspects}
-            exportFormat={visualSettings.export_format}
-            exportResolution={visualSettings.export_resolution}
-            showShimmer={Boolean(chartSvg) && chartLoading}
-          />
+        {(viewMode === 'input' || viewMode === 'generating') && (
+          <div className={viewMode === 'generating' ? 'stage-leaving-left' : ''}>
+            {renderHeroCopy()}
+          </div>
         )}
-        {viewMode === 'customising' && (
-          <div className={`customise-shell${viewMode === 'customising' ? ' is-open' : ''}`}>
+
+        {(viewMode === 'result' || viewMode === 'customising') && (
+          <div className="stage-two-left">
+            <ChartView
+              chartSvg={chartSvg}
+              chartLoading={chartLoading}
+              chartError={chartError}
+              chartLoaded={chartLoaded}
+              onCustomise={handleCustomise}
+              onReturnToInput={handleReturnToInput}
+              onCloseCustomise={handleCloseCustomise}
+              isCustomiseOpen={viewMode === 'customising'}
+              panelRef={genRef}
+              outputClassName={outputClassName}
+              outputStyle={outputStyle}
+              pulseGroup={previewPulseGroup}
+              pulseNonce={previewPulseNonce}
+              showPlacements={visualSettings.show_placements}
+              showAspects={visualSettings.show_aspects}
+              exportFormat={visualSettings.export_format}
+              exportResolution={visualSettings.export_resolution}
+              showShimmer={Boolean(chartSvg) && chartLoading}
+            />
+            <div className={`customise-drop${viewMode === 'customising' ? ' is-open' : ''}`}>
             <CustomisePanel
               settings={wheelConfig}
               visualSettings={visualDraftSettings}
@@ -594,38 +430,42 @@ export default function Hero() {
               onClose={handleCloseCustomise}
               onReturnToInput={handleReturnToInput}
             />
+            </div>
           </div>
         )}
       </div>
 
-      <div className="hero-right" ref={rightRef}>
-        <div className="blob b1"></div><div className="blob b2"></div>
-        <div className="print-frame">
-          <svg className="foreshadow-circle" ref={circleWrapRef} viewBox="0 0 100 100" aria-hidden="true">
-            <circle ref={circleRef} cx="50" cy="50" r="44" pathLength="1" />
-          </svg>
-          {chartSvg ? (
-            <div className="chart-output-wrap">
-              {chartLoading && <div className="chart-output-shimmer" aria-hidden="true" />}
-              <div
-                className={`${outputClassName} ${previewPulseGroup ? `pulse-${previewPulseGroup}` : ''}`}
-                key={`print-preview-${previewPulseNonce}`}
-                ref={printChartRef}
-                style={outputStyle}
-                data-show-placements={visualSettings.show_placements}
-                data-show-aspects={visualSettings.show_aspects}
-                data-export-format={visualSettings.export_format}
-                data-export-resolution={visualSettings.export_resolution}
-                dangerouslySetInnerHTML={{ __html: chartSvg }}
-              />
+      <div className="hero-right">
+        {(viewMode === 'input' || viewMode === 'generating') && (
+          <div className={viewMode === 'generating' ? 'stage-leaving-left' : ''}>
+            {renderInputForm('stage-input-card')}
+          </div>
+        )}
+
+        {(viewMode !== 'input' && chartSvg) && (
+          <div className="chart-stage-enter">
+            <div className="blob b1"></div><div className="blob b2"></div>
+            <div className="print-frame">
+              <div className="chart-output-wrap">
+                {chartLoading && <div className="chart-output-shimmer" aria-hidden="true" />}
+                <div
+                  className={`${outputClassName} ${previewPulseGroup ? `pulse-${previewPulseGroup}` : ''}`}
+                  key={`print-preview-${previewPulseNonce}`}
+                  ref={printChartRef}
+                  style={outputStyle}
+                  data-show-placements={visualSettings.show_placements}
+                  data-show-aspects={visualSettings.show_aspects}
+                  data-export-format={visualSettings.export_format}
+                  data-export-resolution={visualSettings.export_resolution}
+                  dangerouslySetInnerHTML={{ __html: chartSvg }}
+                />
+              </div>
+              {chartLoaded && (
+                <a className="poster-btn" href="/shop">Download print-ready poster &rarr;</a>
+              )}
             </div>
-          ) : (
-            <div className="chart-placeholder">the wheel appears here after you generate it</div>
-          )}
-          {chartLoaded && (
-            <a className="poster-btn" href="/shop">Download print-ready poster &rarr;</a>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </section>
   )
