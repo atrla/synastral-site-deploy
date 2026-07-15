@@ -48,7 +48,6 @@ const THEME_OPTIONS = [
 ]
 
 const BACKGROUND_OPTIONS = [
-  { id: 'dark', label: 'Dark' },
   { id: 'light', label: 'Light' },
   { id: 'transparent', label: 'Transparent' },
 ]

@@ -1,7 +1,7 @@
 /* ---------- hero: free generator ---------- */
-.hero{position:relative;padding:clamp(2.25rem,5vw,2.75rem) var(--gutter) clamp(3rem,6vw,3.25rem);overflow:hidden;
-  display:grid;grid-template-columns:1fr;gap:clamp(2rem,5vw,3.125rem);align-items:start}
-.hero-left{position:relative;z-index:3}
+.hero{position:relative;padding:clamp(2.25rem,5vw,2.75rem) var(--gutter) clamp(3rem,6vw,3.25rem);overflow:visible;
+  display:grid;grid-template-columns:1fr;gap:clamp(1.25rem,3vw,2rem);align-items:start}
+.hero-left{position:relative;z-index:3;min-width:0;transition:min-height .32s cubic-bezier(.2,.8,.2,1)}
 .hero-intro{animation:rise .7s .45s ease both}
 .hero-title{position:relative}
 .fade-out-up{animation:fadeOutUp .55s ease forwards}
@@ -18,7 +18,8 @@
 .hero-input .cinematic-sky,.hero-generating .cinematic-sky,.hero-result .cinematic-sky{opacity:.55}
 .hero-input .dither-shell,.hero-generating .dither-shell,.hero-result .dither-shell{opacity:.26}
 .hero-generating .edit-panel{animation:none}
-.hero-result .chart-view-card.gen{margin-top:0}
+.hero-result .chart-view-card{margin-top:0}
+.hero-result .hero-left,.hero-customise .hero-left{min-height:clamp(30rem,68vh,46rem)}
 .hero-returning-input .chart-view-card,
 .hero-returning-input .customise-panel,
 .hero-returning-input .print-frame{animation:fadeOutSoft .26s ease forwards}
@@ -214,7 +215,7 @@ h1 .line{display:block}
 .theme-swatch-midnight{background:linear-gradient(135deg,#c8c793 0%,#c8c793 36%,#24201a 36%,#3f2548 68%,#35369c 100%)}
 .theme-swatch-bw{background:linear-gradient(135deg,#fff 0%,#fff 52%,#000 52%,#000 100%)}
 .theme-card-label{font-family:"DM Mono",monospace;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase}
-.segment-control{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--sky);background:rgba(255,255,255,.65);overflow:hidden}
+.segment-control{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:1px solid var(--sky);background:rgba(255,255,255,.65);overflow:hidden}
 .segment-btn{min-height:44px;border:0;border-right:1px solid rgba(138,148,200,.35);background:transparent;color:var(--ink);padding:.55rem .4rem;font:inherit;font-size:.875rem;cursor:pointer;touch-action:manipulation}
 .segment-btn:last-child{border-right:0}
 .segment-btn.is-selected{background:var(--ink);color:var(--paper)}
@@ -246,7 +247,7 @@ h1 .line{display:block}
   mask-image:radial-gradient(ellipse 68% 68% at 50% 45%,#000 52%,transparent 88%);
   animation:floaty 11s ease-in-out infinite}
 .hero-iris img{width:100%;display:block}
-.print-frame{position:relative;z-index:2;margin:6% 8% 0 12%;background:#fff;padding:1rem 1rem 3.25rem;
+.print-frame{position:relative;z-index:2;margin:4% 4% 0;background:#fff;padding:1rem 1rem 3.25rem;
   box-shadow:0 24px 60px rgba(10,51,35,.18), 0 4px 14px rgba(10,51,35,.14);
   transform:rotate(1.6deg);animation:rise .8s .3s ease both;
   transition:transform .5s cubic-bezier(.2,.8,.2,1),box-shadow .5s}
@@ -266,8 +267,9 @@ h1 .line{display:block}
 }
 
 @media(min-width:64em){
-  .hero.hero-input{grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr)}
-  .hero:not(.hero-input){grid-template-columns:minmax(18rem,20rem) 1fr}
+  .hero{gap:clamp(1rem,2vw,1.5rem)}
+  .hero.hero-input{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .hero:not(.hero-input){grid-template-columns:minmax(22rem,26rem) minmax(0,1fr)}
   .hero-right{margin-top:0}
   .hero:not(.hero-generating) .chart-view-card .chart-output-wrap{display:none}
 }
@@ -342,8 +344,8 @@ h1 .line{display:block}
 }
 
 @media(min-width:64em){
-  .customise-shell{position:absolute;top:0;left:0;z-index:24;width:100%;height:100%;pointer-events:none}
-  .customise-panel{transform:translateX(-110%);border-radius:0;box-shadow:18px 18px 0 rgba(138,148,200,.16), inset 0 1px 0 rgba(255,255,255,.9);padding:1.5rem 1rem 2rem}
+  .customise-shell{position:relative;inset:auto;z-index:24;width:100%;height:auto;min-height:clamp(30rem,68vh,46rem);pointer-events:none}
+  .customise-panel{height:100%;min-height:inherit;transform:translateX(-110%);border-radius:0;box-shadow:18px 18px 0 rgba(138,148,200,.16), inset 0 1px 0 rgba(255,255,255,.9);padding:1.5rem 1rem 2rem}
   .customise-shell.is-open .customise-panel{transform:translateX(0)}
   .customise-panel-head{padding:0 0 .75rem;border-bottom:0;background:transparent;backdrop-filter:none}
   .customise-panel-actions{width:100%;padding-right:3rem}
@@ -358,6 +360,10 @@ h1 .line{display:block}
 @keyframes pulseElements{0%{opacity:.75;filter:brightness(1.12)}100%{opacity:1;filter:brightness(1)}}
 @keyframes pulseStroke{0%{opacity:.78;filter:brightness(1.2)}100%{opacity:1;filter:brightness(1)}}
 @keyframes fadeOutSoft{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-10px) scale(.985)}}
+@keyframes panelEnter{0%{opacity:0}100%{opacity:1}}
+
+.hero-result .chart-view-card,
+.hero-customise .customise-panel{animation:panelEnter .32s cubic-bezier(.2,.8,.2,1) both}
 
 /* Focus and active feedback that works for keyboard and touch */
 .tab-btn:focus-visible,

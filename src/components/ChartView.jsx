@@ -29,7 +29,7 @@
   }
 
   return (
-    <div className="chart-view-card gen edit-panel" ref={panelRef}>
+    <div className="chart-view-card edit-panel" ref={panelRef}>
       <div className="chart-view-head">
         <div>
           <p className="t">chart ready</p>

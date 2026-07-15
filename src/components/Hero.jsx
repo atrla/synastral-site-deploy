@@ -20,7 +20,7 @@ const FIELD_ERRORS = {
 
 const DEFAULT_VISUAL_SETTINGS = {
   theme: 'ink',
-  background: 'light',
+  background: 'transparent',
   line_width: 1.5,
   glyph_size: 16,
   font_size: 11,
