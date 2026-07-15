@@ -1,27 +1,87 @@
-export default function ChartView({ chartSvg, chartLoading, chartError, chartLoaded, onCustomize }) {
+﻿export default function ChartView({
+  chartSvg,
+  chartLoading,
+  chartError,
+  chartLoaded,
+  onCustomise,
+  onReturnToInput,
+  onCloseCustomise,
+  isCustomiseOpen = false,
+  panelRef,
+  chartRef,
+  outputClassName = 'chart-output',
+  outputStyle = {},
+  pulseGroup = '',
+  pulseNonce = 0,
+  showPlacements = true,
+  showAspects = true,
+  exportFormat = 'png',
+  exportResolution = '1x',
+  showShimmer = false,
+}) {
+  const handleCustomiseClick = () => {
+    if (isCustomiseOpen) {
+      onCloseCustomise?.()
+      return
+    }
+
+    onCustomise?.()
+  }
+
   return (
-    <div className="chart-view-card">
+    <div className="chart-view-card gen edit-panel" ref={panelRef}>
       <div className="chart-view-head">
         <div>
-          <p className="t">your chart</p>
-          <h2>your chart is ready</h2>
+          <p className="t">chart ready</p>
+          <p className="chart-view-note">Save this result, refine the styling, or return to the birth details.</p>
         </div>
-        <button type="button" className="continue-inline" onClick={onCustomize}>
-          ✨ Customize My Chart
-        </button>
+        <div className="chart-view-actions">
+          <button
+            type="button"
+            className="continue-inline chart-action-secondary"
+            onClick={onReturnToInput}
+            disabled={chartLoading}
+          >
+            Edit Birth Details
+          </button>
+          <button
+            type="button"
+            className="continue-inline"
+            onClick={handleCustomiseClick}
+            aria-expanded={isCustomiseOpen}
+            aria-controls="chart-customise-panel"
+          >
+            {isCustomiseOpen ? 'Close Customisation' : 'Customise Chart'}
+          </button>
+        </div>
       </div>
 
       {chartError && <div className="gen-alert mono">{chartError}</div>}
 
       {chartLoading && !chartSvg && (
-        <div className="chart-loading">Generating your chart…</div>
+        <div className="chart-loading">Generating chart…</div>
       )}
 
       {!chartLoading && !chartError && !chartSvg && chartLoaded && (
-        <div className="chart-loading">Your chart is ready to preview.</div>
+        <div className="chart-loading">Preview ready.</div>
       )}
 
-      {chartSvg && <div className="chart-output" dangerouslySetInnerHTML={{ __html: chartSvg }} />}
+      {chartSvg && (
+        <div className="chart-output-wrap">
+          {showShimmer && <div className="chart-output-shimmer" aria-hidden="true" />}
+          <div
+            className={`${outputClassName} ${pulseGroup ? `pulse-${pulseGroup}` : ''}`}
+            key={`chart-preview-${pulseNonce}`}
+            ref={chartRef}
+            style={outputStyle}
+            data-show-placements={showPlacements}
+            data-show-aspects={showAspects}
+            data-export-format={exportFormat}
+            data-export-resolution={exportResolution}
+            dangerouslySetInnerHTML={{ __html: chartSvg }}
+          />
+        </div>
+      )}
     </div>
   )
 }

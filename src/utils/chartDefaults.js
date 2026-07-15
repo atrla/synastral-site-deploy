@@ -1,7 +1,7 @@
 export const defaultAspectSettings = {
   maxOrb: 8,
   minFootprint: 1,
-  mode: 'ASPECT_HUB',
+  mode: 'LINES',
 }
 
 export const defaultAppearanceSettings = {
@@ -14,7 +14,7 @@ export function buildDefaultWheelConfig() {
     aspects_shown: 'all',
     max_orb: defaultAspectSettings.maxOrb,
     orb_fade: false,
-    aspect_hub: true,
+    aspect_hub: false,
     conj_arcs: false,
     min_footprint: defaultAspectSettings.minFootprint,
     glyph_scale: defaultAppearanceSettings.glyphScale,

@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { Nav, DataStrip } from './components/Chrome.jsx'
 import Hero from './components/Hero.jsx'
 import About from './components/About.jsx'
-import { Upsell, Shop, Metamorph, Footer } from './components/Sections.jsx'
+import { Shop, Metamorph, Footer } from './components/Sections.jsx'
 
 export default function App() {
   // scroll-reveal for .reveal elements. A MutationObserver runs alongside
@@ -42,7 +42,6 @@ export default function App() {
       <DataStrip />
       <main>
         <Hero />
-        <Upsell />
         <About />
         <Shop />
         <Metamorph />

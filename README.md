@@ -1,0 +1,150 @@
+# Synastral
+
+Marketing/product site for **Synastral** (https://synastral.com), a free
+birth-chart generator run by Kate. Single-page React app: hero chart
+generator, about, print shop, and contact. The chart itself is computed by
+an external API (not in this repo) — this app is the frontend, plus the
+build pipeline that turns it into a prerendered, SEO-ready static site.
+
+## Stack
+
+React 18 (no router — one page) · Vite 8 + `@vitejs/plugin-react` · plain
+CSS (`src/styles/*.css`, no Tailwind/CSS-in-JS) · self-hosted fonts via
+`@fontsource` · `react-dom/server` for prerendering (no headless browser)
+· `vite-plugin-compression` for precompressed `.gz`/`.br` assets.
+
+## Repository layout
+
+```
+src/
+  App.jsx              page shell — assembles Nav/DataStrip/Hero/About/Shop/etc.
+  main.jsx             client entry: hydrateRoot in prod, createRoot in dev
+  entry-server.jsx      Node-only SSR entry (renderToString), no DOM side effects
+  components/          Hero (chart form + generation), ChartView, CustomisePanel
+                        (wheel styling), Chrome (nav + live sun/moon strip),
+                        About, Sections (Upsell/Shop/Metamorph/Footer),
+                        Constellation, Dither (canvas background), fx (text effects)
+  utils/                chartDefaults.js (wheel config defaults),
+                        placeOptions.js (place-autocomplete normalization)
+  styles/               tokens.css (loaded first) + one stylesheet per section
+  assets/                source images/SVGs, imported with `?url` for hashing
+scripts/
+  generate-sitemap.mjs  writes public/sitemap.xml with today's <lastmod>
+  prerender.mjs          renders <App/> to a string and splices it into dist/index.html
+  validate-schema.mjs    validates the built page's JSON-LD against a type allowlist
+public/                 robots.txt, llms.txt, _headers, apple-touch-icon, fonts
+index.html              document shell + meta tags + JSON-LD (source of truth pre-build)
+dist/                   build output (gitignored) — deploy this directory
+```
+
+## Quick start (dev)
+
+```bash
+npm install
+npm run dev            # vite dev server, client-only render (no SSR/hydration)
+```
+
+The chart generator calls an external API and needs `VITE_CHART_API_BASE`
+set to that API's origin (e.g. `https://api.synastral.com`) in dev, or a
+local `.env` — see [Chart generator](#chart-generator-external-api) below.
+With no `VITE_CHART_API_BASE`, requests fall back to same-origin relative
+paths (`/api/chart/...`), which only works if something proxies that route.
+
+## Build & deploy
+
+```bash
+npm run build           # generate-sitemap.mjs → vite build → prerender.mjs
+npm run validate:schema # optional gate: checks dist/index.html's JSON-LD
+npm run preview         # serve dist/ locally to sanity-check the built output
+```
+
+`vite.config.js` sets `base: './'` so `dist/` works from any static host or
+subfolder, not just a domain root — asset URLs are computed relative to
+each bundle's own `import.meta.url` rather than root-absolute. Deploy
+`dist/` as-is to any static host (Netlify, Cloudflare Pages, S3/CloudFront,
+etc.); no server-side runtime is required.
+
+### Prerendering, without a headless browser
+
+`scripts/prerender.mjs` runs after `vite build` and:
+1. Bundles `src/entry-server.jsx` as a throwaway Node/SSR build via Vite's
+   build API (into `.ssr-tmp/`, cleaned up after).
+2. Calls its `render()` export (`renderToString(<App/>)`) to get real HTML.
+3. Splices that HTML into the already-built `dist/index.html`'s empty
+   `<div id="root"></div>`, and patches one `imagesrcset` attribute that
+   Vite's HTML asset pipeline doesn't rewrite on its own.
+
+This exists because this environment's network allowlist blocks the
+Chromium download Puppeteer/Playwright would need — `renderToString` needs
+nothing but Node and produces the same result for a page with no
+client-only branching. `main.jsx` hydrates that markup with `hydrateRoot`
+in production; in dev, `#root` starts empty and it falls back to a plain
+client render instead.
+
+### Caching (`public/_headers`)
+
+Netlify/Cloudflare Pages header rules: everything under `/assets/` is
+content-hashed by Vite and cached `immutable` for a year; `index.html`,
+`404.html`, and the crawl-surface files (`robots.txt`, `sitemap.xml`,
+`llms.txt`) are `no-cache` so deploys and metadata updates show up
+immediately. Porting to a different host means translating this file to
+that host's header mechanism (`vercel.json`, an nginx `server` block,
+a CloudFront response-headers policy, etc.) — see the comments in the file.
+
+## SEO / crawl surface
+
+* `public/robots.txt` — explicitly allows `GPTBot`, `ClaudeBot`,
+  `PerplexityBot`, and `Google-Extended`, since the chart generator is free
+  with no signup and Kate wants AI answer engines able to cite it.
+* `public/llms.txt` — plain-language site summary for LLM crawlers (who
+  Kate is, what the free tool does, where the paid reading/print/shop
+  links go).
+* `public/sitemap.xml` — regenerated by `generate-sitemap.mjs` on every
+  build (today's date, UTC). One `<url>` entry; it's a single-page site —
+  add more `<url>` blocks in that script if that changes.
+* JSON-LD (`index.html`, `@graph` of `WebSite`/`Organization`/`Person`/
+  `Service` nodes) — `npm run validate:schema` parses it out of the *built*
+  `dist/index.html`, checks every `@type` against a narrow known-good
+  allowlist, rejects `HowTo`/`FAQPage`/`AggregateRating`/`LocalBusiness` by
+  policy, and requires every `url`/`@id`/`sameAs` to be absolute.
+
+## Chart generator (external API)
+
+`src/components/Hero.jsx` is the only part of this app that talks to a
+backend. It calls two endpoints, resolved against `VITE_CHART_API_BASE`
+(build-time env var; falls back to same-origin relative paths if unset):
+
+| Endpoint | Purpose |
+|---|---|
+| `POST api/chart/generate` | body: `birth_date`, `birth_time`, `birth_lat`/`birth_lon`, `wheel_config`; returns `{ svg, wheel_config }` |
+| `GET api/chart/places?q=` | debounced (250ms) place-name autocomplete; normalized by `src/utils/placeOptions.js` |
+
+Chart appearance (orb, aspect display mode, colors, glyph/line/band scale,
+theme) is edited in `CustomisePanel.jsx` and re-sent on every change once a
+chart has been generated once (`src/utils/chartDefaults.js` holds the
+default `wheel_config`). The API itself — geocoding, ephemeris/chart math,
+SVG rendering — is out of scope for this repo.
+
+## Fonts & assets
+
+Fonts are self-hosted via `@fontsource` (Gloock, Pinyon Script, Young
+Serif, Crimson Pro 400/600, DM Mono), imported in `main.jsx` — only the
+weights actually used in `src/` CSS, latin subset only. Images are
+imported with a `?url` suffix so Vite content-hashes them; the two
+responsive image pairs (`03-chart-wheel-*`, `05-prints-*`, 640w/1280w) were
+pre-generated with `sharp` (a devDependency, not wired into any npm
+script) and checked in under `src/assets/`.
+
+## Live "today's sky" strip
+
+`Chrome.jsx`'s `DataStrip` computes today's sun sign from a fixed
+date-boundary table and today's moon sign/phase from a lightweight lunar
+approximation (no ephemeris library, no API call) — good to the day, not
+suitable for anything needing real precision. It's decorative chrome, not
+the chart generator.
+
+## Out of scope
+
+The chart-computation/geocoding API, order fulfillment for prints (Etsy),
+readings booking (Ko-fi), and any CMS — none of that lives in this repo.
+This is the marketing shell around a form that posts to someone else's API.

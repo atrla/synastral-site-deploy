@@ -1,5 +1,4 @@
 import { DecryptedText, BlurText } from './fx.jsx'
-import '../styles/upsell.css'
 import '../styles/shop.css'
 import '../styles/metamorph.css'
 import '../styles/footer.css'
@@ -7,19 +6,6 @@ import prints640 from '../assets/05-prints-640.webp?url'
 import prints1280 from '../assets/05-prints-1280.webp?url'
 import butterflySvg from '../assets/001-butterfly.svg?url'
 import flowersSvg from '../assets/002-flowers.svg?url'
-
-export function Upsell() {
-  return (
-    <div className="upsell reveal">
-      <span className="mlabel mono">output → print</span>
-      <div>
-        <h3>want this as a <b>high-quality print?</b></h3>
-        <p>Your exact chart, printed museum-grade on heavyweight archival paper — same ink, same hand, made to frame.</p>
-      </div>
-      <a className="btn" href="https://ko-fi.com/synastral" rel="noopener">get yours <span className="arrow">→</span></a>
-    </div>
-  )
-}
 
 export function Shop() {
   return (
