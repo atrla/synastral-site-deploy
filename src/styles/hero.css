@@ -201,7 +201,7 @@ h1 .line{display:block}
 @media(prefers-reduced-motion:reduce){
   .poster-btn{opacity:.8;transition:none}
 }
-.chart-output{position:relative;z-index:1;width:100%;max-width:100%;aspect-ratio:1/1;display:grid;place-items:center;overflow:hidden}
+.chart-output{position:relative;z-index:1;width:100%;max-width:100%;aspect-ratio:1/1;display:grid;place-items:center;overflow:visible}
 .chart-output svg{width:100%;height:100%}
 .chart-view-card,.customise-panel{border:1px solid var(--sky);background:rgba(255,255,255,.5);backdrop-filter:blur(14px);padding:clamp(1.25rem,3vw,1.875rem);box-shadow:14px 14px 0 rgba(138,148,200,.15), inset 0 1px 0 rgba(255,255,255,.85), inset 0 0 0 1px rgba(255,255,255,.35);max-width:35rem}
 .chart-view-head{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:1.25rem}
@@ -324,9 +324,9 @@ h1 .line{display:block}
 .customise-panel [role="tabpanel"]{display:none}
 .customise-panel [role="tabpanel"].is-active{display:block}
 .drawer-note{font-family:"Crimson Pro",serif;font-size:1rem;line-height:1.6;color:var(--ink);margin:0}
-.chart-output-wrap{position:relative;overflow:hidden;border:1px solid rgba(138,148,200,.26)}
+.chart-output-wrap{position:relative;overflow:visible;border:1px solid rgba(138,148,200,.26)}
 .chart-output-shimmer{position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.8) 40%,transparent 80%);background-size:200% 100%;animation:shimmer 1.15s linear infinite}
-.chart-output{position:relative;z-index:1;width:100%;max-width:100%;aspect-ratio:1/1;display:grid;place-items:center;overflow:hidden;--chart-line-width:1.5;--chart-glyph-size:16;--chart-font-size:11}
+.chart-output{position:relative;z-index:1;width:100%;max-width:100%;aspect-ratio:1/1;display:grid;place-items:center;overflow:visible;--chart-line-width:1.5;--chart-glyph-size:16;--chart-font-size:11}
 .chart-output.bg-dark{background:#07151b}
 .chart-output.bg-light{background:#f8f4e9}
 .chart-output.bg-transparent{background:transparent}
@@ -444,7 +444,7 @@ h1 .line{display:block}
 @media(min-width:64em){
   .hero.hero-input{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
   .hero.hero-generating,.hero.hero-result,.hero.hero-customise{grid-template-columns:minmax(0,30%) minmax(0,70%)}
-  .hero.hero-generating,.hero.hero-result,.hero.hero-customise{height:70vh;max-height:70vh;overflow:hidden;align-items:start}
+  .hero.hero-generating,.hero.hero-result,.hero.hero-customise{height:70vh;max-height:70vh;overflow:visible;align-items:start}
   .hero.hero-input .hero-left{order:1}
   .hero.hero-input .hero-right{order:2}
   .hero.hero-generating .hero-left,.hero.hero-result .hero-left,.hero.hero-customise .hero-left{order:1}
@@ -457,7 +457,7 @@ h1 .line{display:block}
 }
 
 @media(min-width:48em) and (max-width:63.99em){
-  .hero.hero-generating,.hero.hero-result,.hero.hero-customise{height:70vh;max-height:70vh;overflow:auto;align-items:start;align-content:start}
+  .hero.hero-generating,.hero.hero-result,.hero.hero-customise{height:70vh;max-height:70vh;overflow:visible;align-items:start;align-content:start}
   .hero.hero-generating .hero-left,.hero.hero-result .hero-left,.hero.hero-customise .hero-left,
   .hero.hero-generating .hero-right,.hero.hero-result .hero-right,.hero.hero-customise .hero-right{align-self:start}
   .hero.hero-generating .hero-right,.hero.hero-result .hero-right,.hero.hero-customise .hero-right{display:flex;align-items:flex-start}
