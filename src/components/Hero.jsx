@@ -45,6 +45,11 @@ const formatBirthTime = ({ hour, minute, meridiem }) => {
   return `${String(hour24).padStart(2, '0')}:${String(minuteValue).padStart(2, '0')}`
 }
 
+const DEFAULT_CHART_OPTIONS = {
+  house_system: 'placidus',
+  include_minor_aspects: false,
+}
+
 const DEFAULT_VISUAL_SETTINGS = {
   theme: 'ink',
   background: 'transparent',
@@ -75,6 +80,7 @@ export default function Hero() {
   const [placeOptions, setPlaceOptions] = useState([])
   const [placesLoading, setPlacesLoading] = useState(false)
   const [wheelConfig, setWheelConfig] = useState(() => buildDefaultWheelConfig())
+  const [chartOptions, setChartOptions] = useState(DEFAULT_CHART_OPTIONS)
   const [chartSvg, setChartSvg] = useState('')
   const [chartError, setChartError] = useState('')
   const [chartLoading, setChartLoading] = useState(false)
@@ -125,11 +131,12 @@ export default function Hero() {
   const birthTime = formatBirthTime({ hour: values.timeHour, minute: values.timeMinute, meridiem: values.timeMeridiem })
   const canGenerate = Boolean(values.date && birthTime && values.lat && values.lon)
 
-  const generateChart = useCallback(async ({ force = false, wheelConfigOverride } = {}) => {
+  const generateChart = useCallback(async ({ force = false, wheelConfigOverride, chartOptionsOverride } = {}) => {
     if (!canGenerate) return false
     if (!force && !chartLoaded) return false
 
     const configForRequest = wheelConfigOverride || wheelConfig
+    const optionsForRequest = chartOptionsOverride || chartOptions
 
     const seq = ++requestSeq.current
     setChartLoading(true)
@@ -141,6 +148,8 @@ export default function Hero() {
         birth_time: birthTime,
         birth_lat: Number(values.lat),
         birth_lon: Number(values.lon),
+        house_system: optionsForRequest.house_system,
+        include_minor_aspects: optionsForRequest.include_minor_aspects,
         wheel_config: configForRequest,
       }
       const response = await fetch(buildApiUrl('api/chart/generate'), {
@@ -175,7 +184,7 @@ export default function Hero() {
     } finally {
       if (seq === requestSeq.current) setChartLoading(false)
     }
-  }, [birthTime, canGenerate, chartLoaded, values.date, values.lat, values.lon, wheelConfig])
+  }, [birthTime, canGenerate, chartLoaded, values.date, values.lat, values.lon, wheelConfig, chartOptions])
 
   useEffect(() => {
     if (values.place.trim().length < 2) {
@@ -212,12 +221,12 @@ export default function Hero() {
     setPreviewPulseNonce((current) => current + 1)
   }, [])
 
-  const scheduleChartRefresh = useCallback((pulseGroup = 'aspects', nextWheelConfig = null) => {
+  const scheduleChartRefresh = useCallback((pulseGroup = 'aspects', nextWheelConfig = null, nextChartOptions = null) => {
     if (chartDebounceRef.current) window.clearTimeout(chartDebounceRef.current)
     chartDebounceRef.current = window.setTimeout(() => {
       if (!chartLoaded || !canGenerate) return
       triggerPreviewPulse(pulseGroup)
-      generateChart({ wheelConfigOverride: nextWheelConfig || undefined })
+      generateChart({ wheelConfigOverride: nextWheelConfig || undefined, chartOptionsOverride: nextChartOptions || undefined })
     }, 200)
   }, [canGenerate, chartLoaded, generateChart, triggerPreviewPulse])
 
@@ -230,6 +239,12 @@ export default function Hero() {
     if (options.shouldGenerate) {
       scheduleChartRefresh(options.pulseGroup || 'aspects', nextWheelConfig)
     }
+  }
+
+  const handleChartOptionsUpdate = (patch) => {
+    const next = { ...chartOptions, ...patch }
+    setChartOptions(next)
+    scheduleChartRefresh('aspects', null, next)
   }
 
   const handleVisualSettingsUpdate = (patch, options = {}) => {
@@ -278,6 +293,7 @@ export default function Hero() {
     setPlaceOptions([])
     setPlacesLoading(false)
     setWheelConfig(buildDefaultWheelConfig())
+    setChartOptions(DEFAULT_CHART_OPTIONS)
     setChartSvg('')
     setChartError('')
     setChartLoading(false)
@@ -564,8 +580,10 @@ export default function Hero() {
             <CustomisePanel
               settings={wheelConfig}
               visualSettings={visualDraftSettings}
+              chartOptions={chartOptions}
               onUpdateSettings={handleSettingsUpdate}
               onUpdateVisualSettings={handleVisualSettingsUpdate}
+              onUpdateChartOptions={handleChartOptionsUpdate}
               onClose={handleCloseCustomise}
               onReturnToInput={handleReturnToInput}
             />

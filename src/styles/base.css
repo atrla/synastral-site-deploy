@@ -4,7 +4,7 @@ html{background:#EBE7C4}
 body{background:var(--paper);color:var(--ink);position:relative;
   font-family:"Crimson Pro",Georgia,serif;font-size:17px;overflow-x:hidden}
 @media(min-width:48em){
-  body{width:min(80vw,var(--content-max));margin-inline:auto;
+  body{width:80vw;margin-inline:auto;
     border-inline:1px solid rgba(10,51,35,.2)}
 }
 h1,h2,h3,.big,.logo,.upsell h3{font-family:"Gloock",Georgia,serif;font-weight:400}

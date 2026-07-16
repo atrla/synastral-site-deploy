@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 function SliderField({ label, min, max, step, value, unit = '', onChange, onRelease }) {
   const percent = max === min ? 0 : ((value - min) / (max - min)) * 100
@@ -51,10 +51,25 @@ const BACKGROUND_OPTIONS = [
   { id: 'transparent', label: 'Transparent' },
 ]
 
-export default function CustomisePanel({ settings, visualSettings, onUpdateSettings, onUpdateVisualSettings, onClose, onReturnToInput }) {
+const PALETTE_FIELDS = [
+  ['ink', 'Ink'],
+  ['tint_fire', 'Fire tint'],
+  ['tint_earth', 'Earth tint'],
+  ['tint_air', 'Air tint'],
+  ['tint_water', 'Water tint'],
+  ['aspect_soft', 'Trine / sextile'],
+  ['aspect_hard', 'Square / opposition'],
+  ['aspect_conj', 'Conjunction'],
+]
+
+export default function CustomisePanel({ settings, visualSettings, chartOptions, onUpdateSettings, onUpdateVisualSettings, onUpdateChartOptions, onClose, onReturnToInput }) {
   const [activeTab, setActiveTab] = useState('style')
   const [maxOrbDraft, setMaxOrbDraft] = useState(settings.max_orb)
   const [minFootprintDraft, setMinFootprintDraft] = useState(settings.min_footprint)
+  // ponytail: draft holds in-picker values; ?? falls back to committed settings,
+  // so no sync effect is needed
+  const [paletteDraft, setPaletteDraft] = useState({})
+  const paletteValue = (key) => paletteDraft[key] ?? settings[key]
 
   useEffect(() => {
     setMaxOrbDraft(settings.max_orb)
@@ -70,19 +85,6 @@ export default function CustomisePanel({ settings, visualSettings, onUpdateSetti
 
   const updateVisual = (patch, options = {}) => {
     onUpdateVisualSettings(patch, options)
-  }
-
-  const aspectStyle = (() => {
-    if (!settings.aspect_hub) return 'lines'
-    if (settings.conj_arcs) return 'both'
-    return 'hub'
-  })()
-
-  const applyAspectStyle = (value) => {
-    const next = { orb_fade: false, aspect_hub: true, conj_arcs: false }
-    if (value === 'lines') next.aspect_hub = false
-    if (value === 'both') next.conj_arcs = true
-    onUpdateSettings(next, { shouldGenerate: true, pulseGroup: 'aspects' })
   }
 
   return (
@@ -164,6 +166,23 @@ export default function CustomisePanel({ settings, visualSettings, onUpdateSetti
                 })}
               </div>
             </div>
+
+            <div>
+              <span className="group-label">Palette</span>
+              <div className="palette-grid">
+                {PALETTE_FIELDS.map(([key, label]) => (
+                  <label key={key} className="palette-field">
+                    <input
+                      type="color"
+                      value={paletteValue(key)}
+                      onChange={(e) => setPaletteDraft((d) => ({ ...d, [key]: e.target.value }))}
+                      onBlur={() => updateSetting(key, paletteValue(key), { shouldGenerate: true, pulseGroup: 'surface' })}
+                    />
+                    <span>{label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -189,7 +208,43 @@ export default function CustomisePanel({ settings, visualSettings, onUpdateSetti
                 <span className="circle-indicator" />
                 <span className="toggle-label">Show aspect lines</span>
               </label>
+              <label className="circle-keyline-toggle">
+                <input
+                  type="checkbox"
+                  checked={chartOptions.include_minor_aspects}
+                  onChange={(e) => onUpdateChartOptions({ include_minor_aspects: e.target.checked })}
+                />
+                <span className="circle-indicator" />
+                <span className="toggle-label">Aspects to angles &amp; points</span>
+              </label>
+              <label className="circle-keyline-toggle">
+                <input
+                  type="checkbox"
+                  checked={settings.show_decans}
+                  onChange={(e) => updateSetting('show_decans', e.target.checked, { shouldGenerate: true, pulseGroup: 'frame' })}
+                />
+                <span className="circle-indicator" />
+                <span className="toggle-label">Decan ring</span>
+              </label>
             </div>
+
+            <div>
+              <span className="group-label">House System</span>
+              <div className="radio-pill-group" role="radiogroup" aria-label="House System">
+                {[['placidus', 'Placidus'], ['whole_sign', 'Whole Sign']].map(([value, label]) => (
+                  <label key={value} className="radio-pill">
+                    <input
+                      type="radio"
+                      name="house-system"
+                      checked={chartOptions.house_system === value}
+                      onChange={() => onUpdateChartOptions({ house_system: value })}
+                    />
+                    <span>{label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
             <SliderField
               label="Max Orb"
               min={0}
@@ -214,23 +269,6 @@ export default function CustomisePanel({ settings, visualSettings, onUpdateSetti
               }}
               onRelease={(value) => updateSetting('min_footprint', value, { shouldGenerate: true, pulseGroup: 'aspects' })}
             />
-
-            <div>
-              <span className="group-label">Aspect Style</span>
-              <div className="radio-pill-group" role="radiogroup" aria-label="Aspect Style">
-                {['lines', 'hub', 'both'].map((value) => (
-                  <label key={value} className="radio-pill">
-                    <input
-                      type="radio"
-                      name="aspect-style"
-                      checked={aspectStyle === value}
-                      onChange={() => applyAspectStyle(value)}
-                    />
-                    <span>{value[0].toUpperCase() + value.slice(1)}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
 
             <SliderField
               label="Line Width"
@@ -259,7 +297,7 @@ export default function CustomisePanel({ settings, visualSettings, onUpdateSetti
 
           </div>
         </div>
+      </div>
     </div>
-  </div>
   )
 }
