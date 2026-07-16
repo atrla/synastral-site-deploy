@@ -390,6 +390,29 @@ h1 .line{display:block}
 .stage-leaving-left{animation:stageFadeLeft .34s cubic-bezier(.25,.8,.25,1) both}
 .chart-stage-enter{animation:chartStageIn .42s cubic-bezier(.2,.8,.2,1) both}
 
+.hero.hero-result .hero-right .print-frame,
+.hero.hero-customise .hero-right .print-frame,
+.hero.hero-generating .hero-right .print-frame{
+  width:100%;
+  max-width:calc(70vh + 2rem);
+  margin:4% auto 0;
+}
+
+.hero.hero-result .hero-right .chart-output-wrap,
+.hero.hero-customise .hero-right .chart-output-wrap,
+.hero.hero-generating .hero-right .chart-output-wrap{
+  width:min(100%,70vh);
+  max-height:70vh;
+  margin-inline:auto;
+}
+
+.hero.hero-result .hero-right .chart-output,
+.hero.hero-customise .hero-right .chart-output,
+.hero.hero-generating .hero-right .chart-output{
+  max-width:70vh;
+  max-height:70vh;
+}
+
 .hero-generating .hero-right{position:relative}
 .hero-generating .hero-right>.stage-leaving-left{position:absolute;inset:0;pointer-events:none}
 
@@ -421,6 +444,23 @@ h1 .line{display:block}
   .hero.hero-input .hero-right,.hero.hero-generating .hero-right,.hero.hero-result .hero-right,.hero.hero-customise .hero-right{order:1}
   .hero.hero-input .hero-left,.hero.hero-generating .hero-left,.hero.hero-result .hero-left,.hero.hero-customise .hero-left{order:2}
   .hero-generating .hero-right>.stage-leaving-left{position:relative;inset:auto;pointer-events:auto}
+  .hero-result .hero-left,.hero-customise .hero-left{min-height:auto}
+}
+
+/* Responsive hardening for tight mobile/tablet widths */
+@media(max-width:47.99em){
+  .editorial-stepper{flex-wrap:wrap;row-gap:.5rem}
+  .chart-view-actions{justify-content:stretch;gap:.625rem}
+  .chart-view-actions .continue-inline{width:100%;min-width:0;flex:1 1 100%}
+  .customise-panel-actions{width:100%;justify-content:stretch}
+  .customise-secondary,.customise-close{flex:1 1 100%}
+  .customise-tabs{flex-wrap:wrap}
+  .tab-btn{flex:1 1 calc(50% - .25rem)}
+  .print-frame .plabel{gap:.35rem;flex-wrap:wrap;justify-content:flex-start}
+}
+
+@media(max-width:39.99em){
+  .theme-card-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 
 @keyframes stageFadeLeft{0%{opacity:1;transform:translateX(0)}100%{opacity:0;transform:translateX(-24px)}}
