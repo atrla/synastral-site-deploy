@@ -42,7 +42,6 @@ const tabs = [
 
 const THEME_OPTIONS = [
   { id: 'ink', label: 'Ink', swatchClass: 'theme-swatch-ink' },
-  { id: 'midnight', label: 'Midnight', swatchClass: 'theme-swatch-midnight' },
   { id: 'bw', label: 'B&W', swatchClass: 'theme-swatch-bw' },
 ]
 

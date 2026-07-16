@@ -225,7 +225,6 @@ h1 .line{display:block}
 .theme-card.is-selected{border-color:var(--cobalt);box-shadow:0 6px 14px rgba(10,51,35,.12),0 0 0 1px rgba(10,51,35,.14);transform:translateY(-2px)}
 .theme-swatch{display:block;width:100%;height:2.25rem;border:1px solid rgba(10,51,35,.22)}
 .theme-swatch-ink{background:linear-gradient(135deg,#f8f4e9 0%,#f8f4e9 44%,#0A3323 44%,#0A3323 100%)}
-.theme-swatch-midnight{background:linear-gradient(135deg,#c8c793 0%,#c8c793 36%,#24201a 36%,#3f2548 68%,#35369c 100%)}
 .theme-swatch-bw{background:linear-gradient(135deg,#fff 0%,#fff 52%,#000 52%,#000 100%)}
 .theme-card-label{font-family:"DM Mono",monospace;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase}
 .segment-control{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:1px solid var(--sky);background:rgba(255,255,255,.65);overflow:hidden}
@@ -330,13 +329,7 @@ h1 .line{display:block}
 .chart-output.bg-dark{background:#07151b}
 .chart-output.bg-light{background:#f8f4e9}
 .chart-output.bg-transparent{background:transparent}
-.chart-output.theme-midnight .planet-label,.chart-output.theme-midnight .aspect-line,.chart-output.theme-midnight .house-line{color:#24201A!important;fill:#24201A!important;stroke:#24201A!important}
-.chart-output.theme-midnight .element-tint-earth,.chart-output.theme-midnight .element-tint-water{fill:#3F2548!important;stroke:#3F2548!important;color:#3F2548!important}
-.chart-output.theme-midnight .element-tint-air{fill:#35369C!important;stroke:#35369C!important;color:#35369C!important}
-.chart-output.theme-midnight .element-tint-fire{fill:#7C67E0!important;stroke:#7C67E0!important;color:#7C67E0!important}
-.chart-output.theme-midnight .aspect-mark.conj,.chart-output.theme-midnight .planet-glyph{color:#C8C793!important;fill:#C8C793!important;stroke:#C8C793!important}
-.chart-output.theme-bw .element-tint-earth,.chart-output.theme-bw .element-tint-water,.chart-output.theme-bw .element-tint-air,.chart-output.theme-bw .element-tint-fire{fill:#F0F0F0!important;stroke:#F0F0F0!important;color:#F0F0F0!important}
-.chart-output.theme-bw .aspect-line,.chart-output.theme-bw .house-line,.chart-output.theme-bw .planet-glyph,.chart-output.theme-bw .planet-label{color:#000!important;fill:#000!important;stroke:#000!important;filter:grayscale(1)!important}
+.chart-output.theme-bw{filter:grayscale(1)}
 .chart-output[data-show-placements='false'] .planets-group{display:none!important}
 .chart-output[data-show-aspects='false'] .aspects-group{display:none!important}
 .chart-output .planet-label{font-size:calc(var(--chart-font-size) * 1px)!important}

@@ -367,7 +367,8 @@ export default function Hero() {
   }
 
   const handleExportChart = useCallback(async () => {
-    const svgElement = printChartRef.current?.querySelector('svg')
+    const chartOutput = printChartRef.current
+    const svgElement = chartOutput?.querySelector('svg')
     if (!svgElement) return
 
     const fileStem = sanitizeFileStem(values.date)
@@ -411,6 +412,16 @@ export default function Hero() {
       const context = canvas.getContext('2d')
       if (!context) return
 
+      const backgroundColor = chartOutput ? window.getComputedStyle(chartOutput).backgroundColor : ''
+      if (backgroundColor && backgroundColor !== 'transparent' && backgroundColor !== 'rgba(0, 0, 0, 0)') {
+        context.fillStyle = backgroundColor
+        context.fillRect(0, 0, canvas.width, canvas.height)
+      }
+
+      if (visualSettings.theme === 'bw') {
+        context.filter = 'grayscale(1)'
+      }
+
       context.drawImage(image, 0, 0, canvas.width, canvas.height)
 
       const pngBlob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
@@ -418,7 +429,7 @@ export default function Hero() {
     } finally {
       URL.revokeObjectURL(objectUrl)
     }
-  }, [values.date])
+  }, [values.date, visualSettings.theme])
 
   const renderHeroCopy = () => (
     <div className="hero-intro hero-copy-block">
