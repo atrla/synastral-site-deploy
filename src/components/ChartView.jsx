@@ -6,6 +6,7 @@
   onCustomise,
   onReturnToInput,
   onCloseCustomise,
+  onExport,
   isCustomiseOpen = false,
   panelRef,
   chartRef,
@@ -52,6 +53,14 @@
             aria-controls="chart-customise-panel"
           >
             {isCustomiseOpen ? 'Close Customisation' : 'Customise Chart'}
+          </button>
+          <button
+            type="button"
+            className="continue-inline chart-action-secondary"
+            onClick={onExport}
+            disabled={chartLoading || !chartSvg}
+          >
+            Download as PNG
           </button>
         </div>
       </div>

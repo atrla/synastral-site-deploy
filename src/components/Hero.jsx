@@ -18,6 +18,33 @@ const FIELD_ERRORS = {
   place: 'select a place of birth',
 }
 
+const DEFAULT_MERIDIEM = 'AM'
+const EXPORT_RESOLUTION_SCALE = {
+  '1x': 1,
+  '2x': 2,
+  '3x': 3,
+}
+
+const sanitizeFileStem = (value) => {
+  const cleaned = value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+  return cleaned || 'synastral-chart'
+}
+
+const formatBirthTime = ({ hour, minute, meridiem }) => {
+  const hourValue = Number(hour)
+  const minuteValue = Number(minute)
+
+  if (!hour || !minute || !meridiem) return ''
+  if (!Number.isInteger(hourValue) || hourValue < 1 || hourValue > 12) return ''
+  if (!Number.isInteger(minuteValue) || minuteValue < 0 || minuteValue > 59) return ''
+
+  const hour24 = meridiem === 'PM'
+    ? (hourValue % 12) + 12
+    : hourValue % 12
+
+  return `${String(hour24).padStart(2, '0')}:${String(minuteValue).padStart(2, '0')}`
+}
+
 const DEFAULT_VISUAL_SETTINGS = {
   theme: 'ink',
   background: 'transparent',
@@ -38,10 +65,12 @@ export default function Hero() {
   const genRef = useRef(null)
   const printChartRef = useRef(null)
   const dateRef = useRef(null)
-  const timeRef = useRef(null)
+  const timeHourRef = useRef(null)
+  const timeMinuteRef = useRef(null)
+  const timeMeridiemRef = useRef(null)
   const placeRef = useRef(null)
 
-  const [values, setValues] = useState({ date: '', time: '', place: '', lat: '', lon: '' })
+  const [values, setValues] = useState({ date: '', timeHour: '', timeMinute: '', timeMeridiem: DEFAULT_MERIDIEM, place: '', lat: '', lon: '' })
   const [errors, setErrors] = useState({})
   const [placeOptions, setPlaceOptions] = useState([])
   const [placesLoading, setPlacesLoading] = useState(false)
@@ -87,13 +116,14 @@ export default function Hero() {
   const validateRequired = () => {
     const next = {}
     if (!values.date.trim()) next.date = FIELD_ERRORS.date
-    if (!values.time.trim()) next.time = FIELD_ERRORS.time
+    if (!formatBirthTime({ hour: values.timeHour, minute: values.timeMinute, meridiem: values.timeMeridiem })) next.time = FIELD_ERRORS.time
     if (!values.place.trim() || !values.lat || !values.lon) next.place = FIELD_ERRORS.place
     setErrors(next)
     return Object.keys(next).length === 0
   }
 
-  const canGenerate = Boolean(values.date && values.time && values.lat && values.lon)
+  const birthTime = formatBirthTime({ hour: values.timeHour, minute: values.timeMinute, meridiem: values.timeMeridiem })
+  const canGenerate = Boolean(values.date && birthTime && values.lat && values.lon)
 
   const generateChart = useCallback(async ({ force = false, wheelConfigOverride } = {}) => {
     if (!canGenerate) return false
@@ -108,7 +138,7 @@ export default function Hero() {
     try {
       const body = {
         birth_date: values.date,
-        birth_time: values.time,
+        birth_time: birthTime,
         birth_lat: Number(values.lat),
         birth_lon: Number(values.lon),
         wheel_config: configForRequest,
@@ -145,7 +175,7 @@ export default function Hero() {
     } finally {
       if (seq === requestSeq.current) setChartLoading(false)
     }
-  }, [canGenerate, chartLoaded, values.date, values.time, values.lat, values.lon, wheelConfig])
+  }, [birthTime, canGenerate, chartLoaded, values.date, values.lat, values.lon, wheelConfig])
 
   useEffect(() => {
     if (values.place.trim().length < 2) {
@@ -259,7 +289,7 @@ export default function Hero() {
     setVisualSettings(DEFAULT_VISUAL_SETTINGS)
 
     if (!preserveValues) {
-      setValues({ date: '', time: '', place: '', lat: '', lon: '' })
+      setValues({ date: '', timeHour: '', timeMinute: '', timeMeridiem: DEFAULT_MERIDIEM, place: '', lat: '', lon: '' })
     }
   }, [])
 
@@ -282,7 +312,19 @@ export default function Hero() {
     e.preventDefault()
     const valid = validateRequired()
     if (!valid) {
-      const firstBad = !values.date.trim() ? dateRef : !values.time.trim() ? timeRef : placeRef
+      const firstBad = !values.date.trim()
+        ? dateRef
+        : !values.timeHour.trim()
+          ? timeHourRef
+          : !values.timeMinute.trim()
+            ? timeMinuteRef
+            : !values.timeMeridiem.trim()
+              ? timeMeridiemRef
+              : !formatBirthTime({ hour: values.timeHour, minute: values.timeMinute, meridiem: values.timeMeridiem })
+                ? timeHourRef
+                : !values.place.trim() || !values.lat || !values.lon
+                  ? placeRef
+                  : timeHourRef
       firstBad.current?.focus()
       return
     }
@@ -307,6 +349,60 @@ export default function Hero() {
   const handleCloseCustomise = () => {
     setViewMode('result')
   }
+
+  const handleExportChart = useCallback(async () => {
+    const svgElement = printChartRef.current?.querySelector('svg')
+    if (!svgElement) return
+
+    const fileStem = sanitizeFileStem(values.date)
+    const exportScale = EXPORT_RESOLUTION_SCALE['1x']
+
+    const downloadBlob = (blob, extension) => {
+      const objectUrl = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = objectUrl
+      link.download = `${fileStem}.${extension}`
+      link.rel = 'noopener'
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0)
+    }
+
+    const serialized = new XMLSerializer().serializeToString(svgElement)
+    const svgBlob = new Blob([serialized], { type: 'image/svg+xml;charset=utf-8' })
+    const objectUrl = URL.createObjectURL(svgBlob)
+
+    try {
+      const image = new Image()
+      image.decoding = 'async'
+
+      const imageLoaded = new Promise((resolve, reject) => {
+        image.onload = () => resolve()
+        image.onerror = reject
+      })
+
+      image.src = objectUrl
+      await imageLoaded
+
+      const viewBox = svgElement.viewBox?.baseVal
+      const baseWidth = viewBox?.width || svgElement.clientWidth || 1024
+      const baseHeight = viewBox?.height || svgElement.clientHeight || 1024
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.max(1, Math.round(baseWidth * exportScale))
+      canvas.height = Math.max(1, Math.round(baseHeight * exportScale))
+
+      const context = canvas.getContext('2d')
+      if (!context) return
+
+      context.drawImage(image, 0, 0, canvas.width, canvas.height)
+
+      const pngBlob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
+      if (pngBlob) downloadBlob(pngBlob, 'png')
+    } finally {
+      URL.revokeObjectURL(objectUrl)
+    }
+  }, [values.date])
 
   const renderHeroCopy = () => (
     <div className="hero-intro hero-copy-block">
@@ -337,12 +433,57 @@ export default function Hero() {
               aria-describedby={errors.date ? 'g-date-err' : undefined} />
             {errors.date && <p className="field-err mono" id="g-date-err">{errors.date}</p>}
           </div>
-          <div>
-            <label htmlFor="g-time">time of birth</label>
-            <input id="g-time" name="birth-time" type="time"
-              required ref={timeRef} value={values.time} onChange={setField('time')}
-              aria-invalid={errors.time ? 'true' : undefined}
-              aria-describedby={errors.time ? 'g-time-err' : undefined} />
+          <div className="birth-time-field">
+            <div className="time-group-label">time of birth</div>
+            <div className="time-inputs" aria-describedby={errors.time ? 'g-time-err' : undefined}>
+              <label className="time-field" htmlFor="g-time-hour">
+                <span className="time-sub-label">hour</span>
+                <input
+                  id="g-time-hour"
+                  name="birth-time-hour"
+                  type="number"
+                  min="1"
+                  max="12"
+                  inputMode="numeric"
+                  required
+                  ref={timeHourRef}
+                  value={values.timeHour}
+                  onChange={setField('timeHour')}
+                  aria-invalid={errors.time ? 'true' : undefined}
+                />
+              </label>
+              <label className="time-field" htmlFor="g-time-minute">
+                <span className="time-sub-label">minute</span>
+                <input
+                  id="g-time-minute"
+                  name="birth-time-minute"
+                  type="number"
+                  min="0"
+                  max="59"
+                  inputMode="numeric"
+                  required
+                  ref={timeMinuteRef}
+                  value={values.timeMinute}
+                  onChange={setField('timeMinute')}
+                  aria-invalid={errors.time ? 'true' : undefined}
+                />
+              </label>
+              <label className="time-field" htmlFor="g-time-meridiem">
+                <span className="time-sub-label">am/pm</span>
+                <select
+                  id="g-time-meridiem"
+                  name="birth-time-meridiem"
+                  required
+                  ref={timeMeridiemRef}
+                  value={values.timeMeridiem}
+                  onChange={setField('timeMeridiem')}
+                  aria-invalid={errors.time ? 'true' : undefined}
+                >
+                  <option value="AM">AM</option>
+                  <option value="PM">PM</option>
+                </select>
+              </label>
+            </div>
             {errors.time && <p className="field-err mono" id="g-time-err">{errors.time}</p>}
           </div>
           <div>
@@ -408,6 +549,7 @@ export default function Hero() {
               onCustomise={handleCustomise}
               onReturnToInput={handleReturnToInput}
               onCloseCustomise={handleCloseCustomise}
+              onExport={handleExportChart}
               isCustomiseOpen={viewMode === 'customising'}
               panelRef={genRef}
               outputClassName={outputClassName}
@@ -416,8 +558,6 @@ export default function Hero() {
               pulseNonce={previewPulseNonce}
               showPlacements={visualSettings.show_placements}
               showAspects={visualSettings.show_aspects}
-              exportFormat={visualSettings.export_format}
-              exportResolution={visualSettings.export_resolution}
               showShimmer={Boolean(chartSvg) && chartLoading}
             />
             <div className={`customise-drop${viewMode === 'customising' ? ' is-open' : ''}`}>
