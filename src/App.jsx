@@ -42,7 +42,9 @@ export default function App() {
       <DataStrip />
       <main>
         <Hero />
+        <div className="star-rule section-divider" aria-hidden="true"><span style={{ '--dur': '26s' }}>✦</span></div>
         <About />
+        <div className="star-rule section-divider" aria-hidden="true"><span style={{ '--dur': '34s', '--dir': 'reverse' }}>✦</span></div>
         <Shop />
         <Metamorph />
       </main>

@@ -10,13 +10,12 @@ import flowersSvg from '../assets/002-flowers.svg?url'
 export function Shop() {
   return (
     <section aria-labelledby="shop-heading">
-      <div className="star-rule" aria-hidden="true"><span style={{ '--dur': '34s', '--dir': 'reverse' }}>✦</span></div>
       <div className="kicker"><DecryptedText text="03 — the shop" /></div>
       <BlurText as="h2" id="shop-heading">take the sky <span className="lite ser">home</span></BlurText>
       <div className="shop-band reveal">
         <div className="shop-copy">
-          <p>Chart posters in the house style, seasonal zines, written mini-readings, and small strange objects from the studio. These chart prints keep the same house style as the free chart above, printed clean and shipped worldwide.</p>
-          <a className="btn" href="https://etsy.com/shop/synastral" rel="noopener">visit the shop ↗</a>
+          <p>Get chart poster prints and annual astrology planners from my shop, available in both digital and physical format with worldwide shipping.</p>
+          <a className="btn" href="https://etsy.com/shop/synastralco" rel="noopener">visit the shop ↗</a>
         </div>
         <div className="shop-visual">
           <img
@@ -71,7 +70,7 @@ export function Footer() {
       </div>
       <div className="row mono">
         <span>synastral — est. in the stars · [ end of record ]</span>
-        <span><a href="#top">home</a> / <a href="#chart">birth chart</a> / <a href="https://ko-fi.com/synastral" rel="noopener">book ↗</a> / <a href="https://etsy.com/shop/synastral" rel="noopener">shop ↗</a> / <a href="#contact">contact</a></span>
+        <span><a href="#top">home</a> / <a href="#chart">birth chart</a> / <a href="https://ko-fi.com/slideshowastrology" rel="noopener">chart readings ↗</a> / <a href="https://etsy.com/shop/synastralco" rel="noopener">shop ↗</a> / <a href="#contact">contact</a></span>
       </div>
     </footer>
   )

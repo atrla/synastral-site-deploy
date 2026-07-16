@@ -313,11 +313,10 @@ export default function Hero() {
       <div className="hero-title">
       <div className="eyebrow mono">01 &mdash; synastral / astrology by kate<span className="caret">&#9608;</span></div>
       <h1>
-        <span className="line">your <span className="strong">birth chart,</span></span>
-        <span className="line"><span className="ser">free &amp;</span></span>
-        <span className="line"><span className="strong">no strings.</span></span>
+        <span className="strong">create your </span>
+        <span className="line">birth chart!</span>
       </h1>
-      <p className="tag">Enter the moment you were born, get your full natal wheel in the <b>Synastral house style</b> &mdash; houses, aspects, placements. Right here, right now.</p>
+      <p className="tag">Use this free astrology calculator to generate a birth chart featuring your unique houses, aspects, and placements. Customise colors, backgrounds, and details.</p>
       </div>
     </div>
   )
@@ -325,8 +324,8 @@ export default function Hero() {
   const renderInputForm = (className = '') => (
       <form className={`gen${className ? ` ${className}` : ''}`} id="chart-form" tabIndex={-1} ref={genRef} onPointerMove={onGenMove} onSubmit={handleContinue} noValidate>
         <div className="gen-head">
-          <span className="t">&#10035; generate your chart</span>
-          <span className="free mono">free / 60 seconds</span>
+          <span className="t">generate your birth chart</span>
+          <span className="free mono">free, no account needed ~</span>
         </div>
 
         <div className="birth-inputs">

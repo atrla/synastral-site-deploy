@@ -9,8 +9,6 @@ body{background:var(--paper);color:var(--ink);position:relative;
 }
 h1,h2,h3,.big,.logo,.upsell h3{font-family:"Gloock",Georgia,serif;font-weight:400}
 h1 b,h1 .strong,h2 b,h3 b,.big b{font-weight:400}
-body::before{content:"";position:absolute;inset:0 var(--gutter);pointer-events:none;z-index:98;
-  border-left:1px dashed rgba(138,148,200,.3);border-right:1px dashed rgba(138,148,200,.3)}
 ::selection{background:var(--cobalt);color:var(--paper)}
 h1,h2,h3{text-wrap:balance}
 p{text-wrap:pretty}
@@ -57,26 +55,15 @@ nav .ext::after{content:" ↗";color:var(--sky)}
 .datastrip .accent{color:var(--cobalt)}
 
 /* ---------- section chrome (shared by all <section> elements) ---------- */
-section{padding:var(--section-space) var(--gutter);position:relative}
+section{padding:0 var(--gutter);position:relative}
 section::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:-1;
   background:radial-gradient(40rem circle at 88% 8%,rgba(183,224,234,.4),transparent 70%),
     radial-gradient(32.5rem circle at 6% 92%,rgba(158,160,222,.25),transparent 70%)}
-section::after{content:"";position:absolute;inset:clamp(.75rem,2vw,1.25rem);pointer-events:none;
-  --c:rgba(138,148,200,.65);
-  background:
-    linear-gradient(var(--c),var(--c)) left top/1px 12px,
-    linear-gradient(var(--c),var(--c)) left top/12px 1px,
-    linear-gradient(var(--c),var(--c)) right top/1px 12px,
-    linear-gradient(var(--c),var(--c)) right top/12px 1px,
-    linear-gradient(var(--c),var(--c)) left bottom/1px 12px,
-    linear-gradient(var(--c),var(--c)) left bottom/12px 1px,
-    linear-gradient(var(--c),var(--c)) right bottom/1px 12px,
-    linear-gradient(var(--c),var(--c)) right bottom/12px 1px;
-  background-repeat:no-repeat}
-.star-rule{display:flex;align-items:center;gap:1.125rem;margin-bottom:1.5rem}
+.star-rule{display:flex;align-items:center;gap:1.125rem;margin:0}
 .star-rule::before,.star-rule::after{content:"";flex:1;height:1px;background:rgba(10,51,35,.22)}
 .star-rule span{display:inline-block;font-size:.875rem;line-height:1;color:var(--lilac);
   animation:spinstep var(--dur,30s) steps(12) infinite;animation-direction:var(--dir,normal)}
+.section-divider{padding:var(--section-space) var(--gutter)}
 .scatter{position:absolute;pointer-events:none;color:var(--lilac);opacity:.55;line-height:1;
   animation:spinstep var(--dur,44s) steps(8) infinite;animation-direction:var(--dir,normal)}
 .kicker{font-size:.6875rem;letter-spacing:.25em;text-transform:uppercase;color:var(--sky-ink);
@@ -98,7 +85,6 @@ h2 .lite{color:var(--sky)}
   nav.nav-open ul{display:flex}
   nav ul li{width:100%}
   nav ul a{display:block;padding:.625rem 0}
-  body::before{display:none}
   .datastrip{justify-content:center;text-align:center}
   .datastrip .ds-hide{display:none}
 }

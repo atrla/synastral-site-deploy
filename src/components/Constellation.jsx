@@ -7,15 +7,23 @@ import { useEffect, useRef } from 'react'
 function makeFigure() {
   const n = 5 + Math.floor(Math.random() * 5) // 5–9 stars
   const pts = []
+  const clamp = (v, min, max) => Math.min(max, Math.max(min, v))
   let x = .18 + Math.random() * .5
   let y = .25 + Math.random() * .4
   let ang = Math.random() * Math.PI * 2
   const step = .13 + Math.random() * .05
   for (let i = 0; i < n; i++) {
     pts.push({ x, y, r: 1.7 + Math.random() * 2, tw: Math.random() * Math.PI * 2 })
-    ang += (Math.random() - .5) * 1.9
-    x = Math.min(.94, Math.max(.06, x + Math.cos(ang) * step * (1 + Math.random() * .7)))
-    y = Math.min(.86, Math.max(.14, y + Math.sin(ang) * step * .9))
+    if (i > 0 && (i % 2 === 0 || Math.random() < .25)) {
+      ang = Math.random() * Math.PI * 2
+    } else {
+      ang += (Math.random() - .5) * 2.6
+      if (Math.random() < .35) ang += (Math.random() < .5 ? -1 : 1) * (Math.PI * (.25 + Math.random() * .35))
+    }
+    const move = step * (.75 + Math.random() * 1.15)
+    const drift = (Math.random() - .5) * step * .95
+    x = clamp(x + Math.cos(ang) * move + Math.cos(ang + Math.PI / 2) * drift, .06, .94)
+    y = clamp(y + Math.sin(ang) * move + Math.sin(ang + Math.PI / 2) * drift * .9, .14, .86)
   }
   const edges = []
   for (let i = 1; i < n; i++) edges.push([i - 1, i])

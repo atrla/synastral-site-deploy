@@ -3,7 +3,7 @@
   --cobalt:#0A3323; --sky:#8A94C8; --sky-ink:#66753F; --pale:#B7E0EA; --paper:#F7F4D5; --ink:#173626;
   --lilac:#9EA0DE; --peach:#839958; --moss:#839958; --rosy:#D3968C;
   --gutter:clamp(1rem,4vw,2.5rem);
-  --section-space:clamp(2.5rem,5vw,4rem);
+  --section-space:clamp(1rem,2vw,4rem);
   --content-max:87.5rem;
 }
 

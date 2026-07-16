@@ -15,8 +15,8 @@ export function Nav() {
       <ul id="primary-nav">
         <li><a href="#top" onClick={closeMenu}>home</a></li>
         <li><a href="#chart" onClick={closeMenu}>chart generator</a></li>
-        <li><a href="https://ko-fi.com/synastral" className="ext" rel="noopener">book with me</a></li>
-        <li><a href="https://etsy.com/shop/synastral" className="ext" rel="noopener">shop</a></li>
+        <li><a href="https://ko-fi.com/slideshowastrology" className="ext" rel="noopener">chart readings</a></li>
+        <li><a href="https://etsy.com/shop/synastralco" className="ext" rel="noopener">shop</a></li>
         <li><a href="#contact" onClick={closeMenu}>contact</a></li>
       </ul>
     </nav>

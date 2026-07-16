@@ -1,5 +1,5 @@
 /* ---------- butterfly ---------- */
-.metamorph{position:relative;padding:clamp(2rem,5vw,2.25rem) var(--gutter) 1.5rem;border-top:1px dashed var(--sky);
+.metamorph{position:relative;padding:clamp(2rem,5vw,2.25rem) var(--gutter) 1.5rem;
   display:grid;grid-template-columns:1fr;justify-items:center;gap:1rem;text-align:center;overflow:hidden}
 .metamorph img{width:min(23.75rem,64vw);display:block;mix-blend-mode:multiply;opacity:.92;
   animation:floaty 9s ease-in-out infinite}
