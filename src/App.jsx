@@ -4,6 +4,7 @@ import Hero from './components/Hero.jsx'
 import About from './components/About.jsx'
 import Faq from './components/Faq.jsx'
 import { Shop, Metamorph, Footer } from './components/Sections.jsx'
+import ConsentBanner from './components/ConsentBanner.jsx'
 
 export default function App() {
   // scroll-reveal for .reveal elements. A MutationObserver runs alongside
@@ -52,6 +53,7 @@ export default function App() {
         <Metamorph />
       </main>
       <Footer />
+      <ConsentBanner />
     </>
   )
 }

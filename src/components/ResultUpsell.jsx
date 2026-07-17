@@ -1,4 +1,5 @@
 import { ETSY_POSTER_URL, ETSY_URL, KOFI_URL } from '../config/site.js'
+import { track } from '../utils/track.js'
 import '../styles/upsell.css'
 
 const shopUrl = ETSY_POSTER_URL || ETSY_URL
@@ -12,8 +13,8 @@ export default function ResultUpsell() {
         <p>download the free png now, then choose a guided reading or gallery-grade poster print when you want more depth and a keepsake finish.</p>
       </div>
       <div className="upsell-actions">
-        <a className="btn" href={KOFI_URL} target="_blank" rel="noopener noreferrer">get your chart read by kate ↗</a>
-        <a className="upsell-link" href={shopUrl} target="_blank" rel="noopener noreferrer">want it on your wall? gallery-grade poster prints ↗</a>
+        <a className="btn" href={KOFI_URL} target="_blank" rel="noopener noreferrer" onClick={() => track('outbound_kofi', { source: 'upsell' })}>get your chart read by kate ↗</a>
+        <a className="upsell-link" href={shopUrl} target="_blank" rel="noopener noreferrer" onClick={() => track('outbound_etsy', { source: 'upsell' })}>want it on your wall? gallery-grade poster prints ↗</a>
       </div>
     </aside>
   )

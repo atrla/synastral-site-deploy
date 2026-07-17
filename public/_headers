@@ -40,3 +40,26 @@
 
 /llms.txt
   Cache-Control: no-cache
+
+# Security headers (WP-2.2, pairs with WP-2.3 analytics).
+#
+# 'unsafe-inline' in style-src is required because components set inline
+# style attributes (style="..."); it does not affect script execution.
+# JSON-LD <script type="application/ld+json"> blocks are inert data, not
+# executable script, so they are never blocked by script-src regardless of
+# its value.
+# If an inline bootstrap <script> (no src attribute) is ever added to
+# index.html, script-src's default-src/self-only posture will block it —
+# add that script's sha256-<hash> to script-src rather than loosening it
+# to 'unsafe-inline'.
+# Microsoft Clarity's beacon/collection subdomains are not officially
+# published or guaranteed stable — verify the *.clarity.ms wildcard still
+# covers Clarity's current regional endpoints against Microsoft's docs at
+# deploy time (https://learn.microsoft.com/en-us/clarity/).
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  X-Frame-Options: DENY
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://www.googletagmanager.com https://www.clarity.ms https://*.clarity.ms; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://www.googletagmanager.com https://*.google-analytics.com; font-src 'self'; connect-src 'self' https://api.synastral.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://*.clarity.ms; object-src 'none'; base-uri 'self'; frame-ancestors 'none'

@@ -1,0 +1,37 @@
+/* ---------- cookie consent banner (WP-2.3) ---------- */
+.consent-banner{position:fixed;left:0;right:0;bottom:0;z-index:300;
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:1rem;
+  padding:1rem var(--gutter);background:var(--paper);border-top:1px dashed var(--sky);
+  box-shadow:0 -.25rem 1rem rgba(10,51,35,.1);
+  animation:consent-rise .35s ease}
+
+@keyframes consent-rise{from{transform:translateY(100%)}to{transform:translateY(0)}}
+
+.consent-copy{margin:0;font-size:.75rem;line-height:1.5;letter-spacing:.01em;color:var(--ink);flex:1 1 20rem}
+
+.consent-actions{display:flex;gap:.75rem;flex-wrap:wrap}
+
+.consent-accept,.consent-decline{font-size:.6875rem;letter-spacing:.14em;text-transform:uppercase;
+  cursor:pointer;padding:.625rem 1.25rem;border-radius:0}
+
+.consent-accept{display:inline-block;background:var(--cobalt);color:var(--paper);border:none;
+  font-family:"Young Serif",Georgia,serif;transition:transform .15s,box-shadow .15s}
+.consent-accept:hover{transform:translate(-.125rem,-.125rem);box-shadow:.25rem .25rem 0 rgba(10,51,35,.3)}
+.consent-accept:active{transform:translate(0,0) scale(.985);box-shadow:.0625rem .0625rem 0 rgba(10,51,35,.25)}
+
+.consent-decline{display:inline-block;background:transparent;color:var(--ink);
+  border:1px solid var(--sky);font-family:"DM Mono","Courier New",monospace}
+.consent-decline:hover{border-color:var(--cobalt);color:var(--cobalt)}
+
+/* Global reduced-motion rule in base.css already zeroes animation-duration
+   for every element — this is an explicit, local backstop so the banner
+   never slides in under prefers-reduced-motion even if that global rule
+   ever changes scope. */
+@media(prefers-reduced-motion:reduce){
+  .consent-banner{animation:none}
+}
+
+@media(max-width:36em){
+  .consent-banner{flex-direction:column;align-items:stretch;text-align:center}
+  .consent-actions{justify-content:center}
+}

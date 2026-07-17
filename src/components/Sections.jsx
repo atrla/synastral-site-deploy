@@ -7,6 +7,7 @@ import prints1280 from '../assets/05-prints-1280.webp?url'
 import butterflySvg from '../assets/001-butterfly.svg?url'
 import flowersSvg from '../assets/002-flowers.svg?url'
 import { EMAIL, ETSY_POSTER_URL, ETSY_URL, KOFI_URL, TIKTOK_URL } from '../config/site.js'
+import { track } from '../utils/track.js'
 
 const shopUrl = ETSY_POSTER_URL || ETSY_URL
 const emailHref = ['mailto', EMAIL].join(':')
@@ -72,9 +73,10 @@ export function Footer() {
         <a href={emailHref}><span className="lab">email</span> {EMAIL}</a>
         <a href={TIKTOK_URL} rel="noopener"><span className="lab">tiktok</span> @slideshowastrology ↗</a>
       </div>
+      <p className="privacy-note mono">the chart generator above doesn't store your birth details — no account, nothing sold. analytics cookies only if you say yes.</p>
       <div className="row mono">
         <span>synastral — est. in the stars · [ end of record ]</span>
-        <span><a href="#top">home</a> / <a href="#chart">birth chart</a> / <a href={KOFI_URL} rel="noopener">chart readings ↗</a> / <a href={shopUrl} rel="noopener">shop ↗</a> / <a href="#contact">contact</a></span>
+        <span><a href="#top">home</a> / <a href="#chart">birth chart</a> / <a href={KOFI_URL} rel="noopener" onClick={() => track('outbound_kofi', { source: 'footer' })}>chart readings ↗</a> / <a href={shopUrl} rel="noopener" onClick={() => track('outbound_etsy', { source: 'footer' })}>shop ↗</a> / <a href="#contact">contact</a></span>
       </div>
     </footer>
   )

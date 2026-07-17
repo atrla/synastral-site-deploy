@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { sanitizeChartSvg } from '../utils/sanitizeSvg.js'
+import { track } from '../utils/track.js'
 
 const API_BASE = (import.meta.env.VITE_CHART_API_BASE || '').trim()
 
@@ -22,17 +23,20 @@ export function useChartApi() {
     })
 
     if (response.status === 429) {
+      track('chart_error', { error_class: 'rate_limited' })
       return { status: 'rate-limited' }
     }
 
     const payload = await response.json()
     if (!response.ok) {
+      track('chart_error', { error_class: 'api_error' })
       return { status: 'error', message: payload.detail || 'couldn\'t generate chart — check your inputs' }
     }
 
     // The real chart-api response is `{ chart_data, svg }`. Sanitise the svg
     // once, right here at the network boundary, so every consumer downstream
     // is already working with safe markup.
+    track('chart_generated')
     return {
       status: 'ok',
       svg: sanitizeChartSvg(payload.svg || ''),

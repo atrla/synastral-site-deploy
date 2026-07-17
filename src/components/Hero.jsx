@@ -9,6 +9,7 @@ import { buildDefaultWheelConfig } from '../utils/chartDefaults.js'
 import { formatBirthTime } from '../utils/birthTime.js'
 import { sanitizeFileStem } from '../utils/files.js'
 import { exportChart } from '../utils/exportChart.js'
+import { track } from '../utils/track.js'
 import '../styles/hero.css'
 
 const FIELD_ERRORS = {
@@ -163,6 +164,7 @@ export default function Hero() {
       return true
     } catch {
       if (seq !== requestSeq.current) return false
+      track('chart_error', { error_class: 'network_error' })
       setChartError('couldn\'t reach the generator, try again')
       return false
     } finally {
@@ -343,6 +345,7 @@ export default function Hero() {
   }
 
   const handleCustomise = () => {
+    track('customise_opened')
     setViewMode('customising')
   }
 
@@ -357,6 +360,7 @@ export default function Hero() {
 
     const fileStem = sanitizeFileStem(values.date)
     await exportChart({ svgElement, visualSettings, wheelConfig, fileStem })
+    track('chart_exported')
   }, [values.date, visualSettings, wheelConfig])
 
   const renderHeroCopy = () => (

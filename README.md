@@ -143,6 +143,37 @@ approximation (no ephemeris library, no API call) — good to the day, not
 suitable for anything needing real precision. It's decorative chrome, not
 the chart generator.
 
+## Analytics (GA4 + Microsoft Clarity, consent-gated)
+
+`src/utils/consent.js` implements Google Consent Mode v2: everything
+(`ad_storage`/`ad_user_data`/`ad_personalization`/`analytics_storage`) is
+denied by default, and nothing (no GA4 tag, no Clarity tag) loads until the
+visitor grants consent via the `<ConsentBanner/>` fixed-bottom bar (shown
+once, choice persisted in `localStorage['synastral-consent']`). This is
+required because Kate is UK-based and GA4/Clarity both set cookies or
+device identifiers — UK GDPR/PECR requires opt-in consent before either
+fires. `src/utils/track.js` is a no-op-safe wrapper (`track(event, props)`)
+that every instrumented call-site uses instead of touching `window.gtag`
+directly, so instrumentation is always silent pre-consent and during SSR.
+
+**Owner setup (one-time):**
+1. Create a GA4 property and a Microsoft Clarity project for
+   synastral.com.
+2. Paste the GA4 measurement id (`G-XXXXXXX`) and Clarity project id into
+   `src/config/site.js`'s `GA_MEASUREMENT_ID` / `CLARITY_PROJECT_ID`
+   (already populated with the site's existing production ids as of
+   WP-2.3 — update only if those ever change).
+3. In the GA4 property, mark `chart_generated` and both `outbound_kofi` /
+   `outbound_etsy` as key events (Admin → Events → Mark as key event) — these
+   are the events that matter for measuring whether the free tool is
+   converting into readings/print sales.
+
+Instrumented events: `chart_generated`, `chart_error` (`error_class`:
+`rate_limited` | `api_error` | `network_error`), `chart_exported`,
+`outbound_kofi` / `outbound_etsy` (`source`: `nav` | `about` | `upsell` |
+`footer` | `faq`), `customise_opened`, `faq_opened` (`question`: a stable
+per-question id).
+
 ## Out of scope
 
 The chart-computation/geocoding API, order fulfillment for prints (Etsy),
