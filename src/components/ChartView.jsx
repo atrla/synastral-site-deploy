@@ -16,8 +16,6 @@
   pulseNonce = 0,
   showPlacements = true,
   showAspects = true,
-  exportFormat = 'png',
-  exportResolution = '1x',
   showShimmer = false,
 }) {
   const handleCustomiseClick = () => {
@@ -60,7 +58,7 @@
             onClick={onExport}
             disabled={chartLoading || !chartSvg}
           >
-            Download as PNG
+            download your chart (png)
           </button>
         </div>
       </div>
@@ -85,8 +83,6 @@
             style={outputStyle}
             data-show-placements={showPlacements}
             data-show-aspects={showAspects}
-            data-export-format={exportFormat}
-            data-export-resolution={exportResolution}
             dangerouslySetInnerHTML={{ __html: chartSvg }}
           />
         </div>

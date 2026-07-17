@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Nav, DataStrip } from './components/Chrome.jsx'
 import Hero from './components/Hero.jsx'
 import About from './components/About.jsx'
+import Faq from './components/Faq.jsx'
 import { Shop, Metamorph, Footer } from './components/Sections.jsx'
 
 export default function App() {
@@ -46,6 +47,8 @@ export default function App() {
         <About />
         <div className="star-rule section-divider" aria-hidden="true"><span style={{ '--dur': '34s', '--dir': 'reverse' }}>✦</span></div>
         <Shop />
+        <div className="star-rule section-divider" aria-hidden="true"><span style={{ '--dur': '29s' }}>✦</span></div>
+        <Faq />
         <Metamorph />
       </main>
       <Footer />

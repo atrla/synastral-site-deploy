@@ -1,5 +1,5 @@
 /* ---------- print upsell strip ---------- */
-.upsell{margin:0 var(--gutter) clamp(2.5rem,5vw,2.75rem);border:1px dashed var(--cobalt);position:relative;
+.upsell{margin:1rem 0 0;border:1px dashed var(--cobalt);position:relative;
   display:grid;grid-template-columns:minmax(0,1fr);align-items:center;gap:1rem 1.625rem;
   padding:clamp(1.25rem,3vw,1.875rem) clamp(1.25rem,4vw,2.25rem);background:
     linear-gradient(120deg,rgba(158,160,222,.25),rgba(255,255,255,.5) 45%,rgba(183,224,234,.3));
@@ -10,8 +10,14 @@
 .upsell h3{font-size:clamp(1.25rem,2.6vw,1.875rem);font-weight:400;letter-spacing:-.02em;color:var(--cobalt)}
 .upsell h3 b{font-weight:700}
 .upsell p{font-size:.9375rem;color:#5A6547;margin-top:.375rem;max-width:34em;line-height:1.6}
-.upsell .btn .arrow{display:inline-block;animation:nudge 1.6s ease-in-out infinite}
+.upsell-actions{display:grid;gap:.75rem;justify-items:start}
+.upsell-link{font-family:"DM Mono",monospace;font-size:.8125rem;line-height:1.5;color:var(--cobalt);text-decoration:none}
+.upsell-link:hover{text-decoration:underline;text-underline-offset:.25rem}
 
 @media(min-width:64em){
   .upsell{grid-template-columns:minmax(0,1fr) auto}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .upsell,.upsell-link{transition:none}
 }

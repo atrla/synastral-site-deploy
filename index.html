@@ -4,23 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Synastral — free birth chart generator · astrology by Kate</title>
-<meta name="description" content="A free and beautiful natal chart generator to visualise your astrology placements. Astrology readings and chart prints by Kate.">
+<meta name="description" content="A free and beautiful natal chart generator to visualise your astrology placements. customise colours, backgrounds, and details.">
 <meta name="theme-color" content="#0A3323">
 <link rel="canonical" href="https://synastral.com/">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://synastral.com/">
 <meta property="og:site_name" content="Synastral">
-<meta property="og:title" content="Synastral · Free Birth Chart Generator · astrology by Kate">
-<meta property="og:description" content="A free and beautiful natal chart generator to visualise your astrology placements. Customise colours, backgrounds, and more!">
+<meta property="og:title" content="Synastral — free birth chart generator · astrology by Kate">
+<meta property="og:description" content="A free and beautiful natal chart generator to visualise your astrology placements. customise colours, backgrounds, and details.">
 <meta property="og:image" content="https://synastral.com/assets/og-image.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Example birth chart poster, printed on gallery-grade paper.">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Synastral · Free Birth Chart Generator · astrology by Kate">
+<meta name="twitter:title" content="Synastral — free birth chart generator · astrology by Kate">
 <meta name="twitter:description" content="A free and beautiful natal chart generator to visualise your astrology placements. Astrology readings and chart prints by Kate.">
 <meta name="twitter:image" content="https://synastral.com/assets/og-image.jpg">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='%230A3323' d='M32 2 L38 26 L62 32 L38 38 L32 62 L26 38 L2 32 L26 26 Z'/%3E%3C/svg%3E">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <!-- href/imagesrcset point at src/assets so Vite content-hashes this the same
      way as the component's own `?url` import. Vite's HTML asset pipeline
@@ -45,7 +45,9 @@
       "@type": "Organization",
       "@id": "https://synastral.com/#organization",
       "name": "Synastral",
-      "url": "https://synastral.com/"
+      "url": "https://synastral.com/",
+      "logo": "https://synastral.com/icon-512.png",
+      "sameAs": ["https://tiktok.com/@slideshowastrology", "https://www.etsy.com/shop/synastralco", "https://ko-fi.com/slideshowastrology"]
     },
     {
       "@type": "Person",
@@ -54,7 +56,7 @@
       "jobTitle": "Astrologer",
       "description": "Astrology chart reader practising Hellenistic and Western astrology for 4+ years.",
       "knowsAbout": ["Birth chart reading", "Astrology chart reading"],
-      "sameAs": ["https://tiktok.com/@slideshowastrology"],
+      "sameAs": ["https://tiktok.com/@slideshowastrology", "https://www.etsy.com/shop/synastralco", "https://ko-fi.com/slideshowastrology"],
       "worksFor": { "@id": "https://synastral.com/#organization" },
       "email": "mailto:kate@synastral.com"
     },
@@ -66,7 +68,7 @@
       "description": "Personal astrology readings by Kate, available as live consultations or written readings.",
       "provider": { "@id": "https://synastral.com/#kate" },
       "areaServed": "Worldwide",
-      "url": "https://ko-fi.com/synastral"
+      "url": "https://ko-fi.com/slideshowastrology"
     },
     {
       "@type": "Service",
@@ -76,7 +78,7 @@
       "description": "Birth chart posters, year-ahead planners, and natal chart interpretations available as digital files and prints.",
       "provider": { "@id": "https://synastral.com/#organization" },
       "areaServed": "Worldwide",
-      "url": "https://etsy.com/shop/synastral"
+      "url": "https://www.etsy.com/shop/synastralco"
     },
     {
       "@type": "WebApplication",
@@ -88,7 +90,8 @@
       "provider": { "@id": "https://synastral.com/#organization" },
       "offers": {
         "@type": "Offer",
-        "price": "0"
+        "price": "0",
+        "priceCurrency": "GBP"
       }
     }
   ]

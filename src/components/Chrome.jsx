@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { DecryptedText } from './fx.jsx'
+import { ETSY_URL, KOFI_URL } from '../config/site.js'
 
 export function Nav() {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -15,8 +16,8 @@ export function Nav() {
       <ul id="primary-nav">
         <li><a href="#top" onClick={closeMenu}>home</a></li>
         <li><a href="#chart" onClick={closeMenu}>chart generator</a></li>
-        <li><a href="https://ko-fi.com/slideshowastrology" className="ext" rel="noopener">chart readings</a></li>
-        <li><a href="https://etsy.com/shop/synastralco" className="ext" rel="noopener">shop</a></li>
+        <li><a href={KOFI_URL} className="ext" rel="noopener">chart readings</a></li>
+        <li><a href={ETSY_URL} className="ext" rel="noopener">shop</a></li>
         <li><a href="#contact" onClick={closeMenu}>contact</a></li>
       </ul>
     </nav>

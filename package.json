@@ -5,9 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/generate-sitemap.mjs && vite build && node scripts/prerender.mjs",
+    "build": "node scripts/generate-sitemap.mjs && vite build && node scripts/prerender.mjs && node scripts/validate-schema.mjs && node scripts/validate-links.mjs",
     "preview": "vite preview",
-    "validate:schema": "node scripts/validate-schema.mjs"
+    "validate:schema": "node scripts/validate-schema.mjs",
+    "test": "vitest run",
+    "lint": "eslint src scripts"
   },
   "dependencies": {
     "react": "^18.3.1",
@@ -20,8 +22,13 @@
     "@fontsource/pinyon-script": "^5.2.8",
     "@fontsource/young-serif": "^5.2.7",
     "@vitejs/plugin-react": "^6.0.3",
+    "eslint": "^9.32.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "jsdom": "^26.1.0",
     "sharp": "^0.35.3",
     "vite": "^8.1.4",
-    "vite-plugin-compression": "^0.5.1"
+    "vite-plugin-compression": "^0.5.1",
+    "vitest": "^3.2.4"
   }
 }

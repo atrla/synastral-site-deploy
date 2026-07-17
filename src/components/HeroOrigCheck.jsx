@@ -2,12 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Dither from './Dither.jsx'
 import ChartView from './ChartView.jsx'
 import CustomisePanel from './CustomisePanel.jsx'
-import ResultUpsell from './ResultUpsell.jsx'
 import { normalizePlaceOption, resolvePlaceSelection } from '../utils/placeOptions.js'
 import { buildDefaultWheelConfig } from '../utils/chartDefaults.js'
-import { formatBirthTime } from '../utils/birthTime.js'
-import { sanitizeFileStem } from '../utils/files.js'
-import { exportChart } from '../utils/exportChart.js'
 import '../styles/hero.css'
 
 const API_BASE = (import.meta.env.VITE_CHART_API_BASE || '').trim()
@@ -23,6 +19,31 @@ const FIELD_ERRORS = {
 }
 
 const DEFAULT_MERIDIEM = 'AM'
+const EXPORT_RESOLUTION_SCALE = {
+  '1x': 1,
+  '2x': 2,
+  '3x': 3,
+}
+
+const sanitizeFileStem = (value) => {
+  const cleaned = value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+  return cleaned || 'synastral-chart'
+}
+
+const formatBirthTime = ({ hour, minute, meridiem }) => {
+  const hourValue = Number(hour)
+  const minuteValue = Number(minute)
+
+  if (!hour || !minute || !meridiem) return ''
+  if (!Number.isInteger(hourValue) || hourValue < 1 || hourValue > 12) return ''
+  if (!Number.isInteger(minuteValue) || minuteValue < 0 || minuteValue > 59) return ''
+
+  const hour24 = meridiem === 'PM'
+    ? (hourValue % 12) + 12
+    : hourValue % 12
+
+  return `${String(hour24).padStart(2, '0')}:${String(minuteValue).padStart(2, '0')}`
+}
 
 const DEFAULT_CHART_OPTIONS = {
   house_system: 'placidus',
@@ -37,13 +58,12 @@ const DEFAULT_VISUAL_SETTINGS = {
   font_size: 11,
   show_placements: true,
   show_aspects: true,
+  export_format: 'png',
+  export_resolution: '1x',
 }
 
 const RESET_TRANSITION_MS = 260
 const STAGE_TRANSITION_MS = 360
-const CHART_REFRESH_DEBOUNCE_MS = 700
-const RATE_LIMIT_COOLDOWN_MS = 5000
-const RATE_LIMIT_MESSAGE = "you're customising quickly — give it a moment ~"
 
 export default function Hero() {
   const heroRef = useRef(null)
@@ -62,10 +82,6 @@ export default function Hero() {
   const [wheelConfig, setWheelConfig] = useState(() => buildDefaultWheelConfig())
   const [chartOptions, setChartOptions] = useState(DEFAULT_CHART_OPTIONS)
   const [chartSvg, setChartSvg] = useState('')
-  // Raw chart_data from the generate response (houses/placements/aspects).
-  // Not consumed by any UI yet — reserved for a future accessible text
-  // summary or tabular data view of the chart.
-  const [chartData, setChartData] = useState(null)
   const [chartError, setChartError] = useState('')
   const [chartLoading, setChartLoading] = useState(false)
   const [chartLoaded, setChartLoaded] = useState(false)
@@ -78,7 +94,6 @@ export default function Hero() {
   const [previewPulseNonce, setPreviewPulseNonce] = useState(0)
 
   const requestSeq = useRef(0)
-  const rateLimitedUntilRef = useRef(0)
   const visualDebounceRef = useRef(null)
   const visualPatchRef = useRef({})
   const visualPulseRef = useRef('frame')
@@ -145,29 +160,22 @@ export default function Hero() {
 
       if (seq !== requestSeq.current) return false
 
-      if (response.status === 429) {
-        setChartError(RATE_LIMIT_MESSAGE)
-        rateLimitedUntilRef.current = Date.now() + RATE_LIMIT_COOLDOWN_MS
-        return false
-      }
-
       const payload = await response.json()
       if (!response.ok) {
         setChartError(payload.detail || 'couldn\'t generate chart \u2014 check your inputs')
         return false
       }
 
-      // The real chart-api response is `{ chart_data, svg }` \u2014 there is no
-      // `wheel_config` field. Chart rendering is stateless/deterministic (the
-      // server renders exactly what was sent), so the client-held wheelConfig/
-      // chartOptions state is already authoritative and needs no merge back.
+      const nextConfig = {
+        ...buildDefaultWheelConfig(),
+        ...configForRequest,
+        ...(payload.wheel_config || {}),
+      }
+
       setChartSvg(payload.svg || '')
       setChartError('')
       setChartLoaded(true)
-      // chart_data (houses/placements/aspects) isn't consumed by any UI yet,
-      // but we keep it around for a future accessible text summary or data
-      // table view of the chart.
-      setChartData(payload.chart_data || null)
+      setWheelConfig(nextConfig)
       return true
     } catch {
       if (seq !== requestSeq.current) return false
@@ -217,12 +225,9 @@ export default function Hero() {
     if (chartDebounceRef.current) window.clearTimeout(chartDebounceRef.current)
     chartDebounceRef.current = window.setTimeout(() => {
       if (!chartLoaded || !canGenerate) return
-      // Skip scheduling further auto-regenerate attempts while we're in a
-      // post-429 cooldown, rather than immediately retrying into the limit again.
-      if (Date.now() < rateLimitedUntilRef.current) return
       triggerPreviewPulse(pulseGroup)
       generateChart({ wheelConfigOverride: nextWheelConfig || undefined, chartOptionsOverride: nextChartOptions || undefined })
-    }, CHART_REFRESH_DEBOUNCE_MS)
+    }, 200)
   }, [canGenerate, chartLoaded, generateChart, triggerPreviewPulse])
 
   const handleSettingsUpdate = (patch, options = {}) => {
@@ -266,7 +271,6 @@ export default function Hero() {
 
   const resetExperience = useCallback(({ preserveValues = true } = {}) => {
     requestSeq.current += 1
-    rateLimitedUntilRef.current = 0
 
     if (visualDebounceRef.current) {
       window.clearTimeout(visualDebounceRef.current)
@@ -291,7 +295,6 @@ export default function Hero() {
     setWheelConfig(buildDefaultWheelConfig())
     setChartOptions(DEFAULT_CHART_OPTIONS)
     setChartSvg('')
-    setChartData(null)
     setChartError('')
     setChartLoading(false)
     setChartLoaded(false)
@@ -369,8 +372,64 @@ export default function Hero() {
     if (!svgElement) return
 
     const fileStem = sanitizeFileStem(values.date)
-    await exportChart({ svgElement, visualSettings, wheelConfig, fileStem })
-  }, [values.date, visualSettings, wheelConfig])
+    const exportScale = EXPORT_RESOLUTION_SCALE['1x']
+
+    const downloadBlob = (blob, extension) => {
+      const objectUrl = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = objectUrl
+      link.download = `${fileStem}.${extension}`
+      link.rel = 'noopener'
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0)
+    }
+
+    const serialized = new XMLSerializer().serializeToString(svgElement)
+    const svgBlob = new Blob([serialized], { type: 'image/svg+xml;charset=utf-8' })
+    const objectUrl = URL.createObjectURL(svgBlob)
+
+    try {
+      const image = new Image()
+      image.decoding = 'async'
+
+      const imageLoaded = new Promise((resolve, reject) => {
+        image.onload = () => resolve()
+        image.onerror = reject
+      })
+
+      image.src = objectUrl
+      await imageLoaded
+
+      const viewBox = svgElement.viewBox?.baseVal
+      const baseWidth = viewBox?.width || svgElement.clientWidth || 1024
+      const baseHeight = viewBox?.height || svgElement.clientHeight || 1024
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.max(1, Math.round(baseWidth * exportScale))
+      canvas.height = Math.max(1, Math.round(baseHeight * exportScale))
+
+      const context = canvas.getContext('2d')
+      if (!context) return
+
+      const backgroundColor = chartOutput ? window.getComputedStyle(chartOutput).backgroundColor : ''
+      if (backgroundColor && backgroundColor !== 'transparent' && backgroundColor !== 'rgba(0, 0, 0, 0)') {
+        context.fillStyle = backgroundColor
+        context.fillRect(0, 0, canvas.width, canvas.height)
+      }
+
+      if (visualSettings.theme === 'bw') {
+        context.filter = 'grayscale(1)'
+      }
+
+      context.drawImage(image, 0, 0, canvas.width, canvas.height)
+
+      const pngBlob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
+      if (pngBlob) downloadBlob(pngBlob, 'png')
+    } finally {
+      URL.revokeObjectURL(objectUrl)
+    }
+  }, [values.date, visualSettings.theme])
 
   const renderHeroCopy = () => (
     <div className="hero-intro hero-copy-block">
@@ -380,7 +439,7 @@ export default function Hero() {
         <span className="strong">create your </span>
         <span className="line">birth chart!</span>
       </h1>
-      <p className="tag">Use this free astrology calculator to generate a birth chart featuring your unique houses, aspects, and placements. customise colours, backgrounds, and details.</p>
+      <p className="tag">Use this free astrology calculator to generate a birth chart featuring your unique houses, aspects, and placements. Customise colors, backgrounds, and details.</p>
       </div>
     </div>
   )
@@ -540,7 +599,6 @@ export default function Hero() {
               onReturnToInput={handleReturnToInput}
             />
             </div>
-            <ResultUpsell />
           </div>
         )}
       </div>
@@ -565,9 +623,14 @@ export default function Hero() {
                   style={outputStyle}
                   data-show-placements={visualSettings.show_placements}
                   data-show-aspects={visualSettings.show_aspects}
+                  data-export-format={visualSettings.export_format}
+                  data-export-resolution={visualSettings.export_resolution}
                   dangerouslySetInnerHTML={{ __html: chartSvg }}
                 />
               </div>
+              {chartLoaded && (
+                <a className="poster-btn" href="/shop">Download print-ready poster &rarr;</a>
+              )}
             </div>
           </div>
         )}

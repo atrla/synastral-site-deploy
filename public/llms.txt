@@ -1,28 +1,25 @@
 # Synastral
 
-Synastral (https://synastral.com/) is an astrology website centered on a
-free birth chart generator. Enter a name, date, time, and place of birth
-and the site renders a full natal wheel — houses, aspects, and placements
-— directly on the page. No account, no email, and no catch: the chart is
-generated instantly and belongs to the visitor.
+Synastral (https://synastral.com/) is a free birth chart generator. Enter
+your date, time, and place of birth, then generate a full natal wheel with
+houses, aspects, and placements. It is customisable, free to use, and has
+no account or email gate. The chart generator above doesn't store your
+birth details.
 
 ## Kate
 
-Synastral is run by Kate, an astrologer who has been reading charts for
-over a decade (practicing since 2014), first informally for friends and
-now for clients on four continents. She reads using the Placidus house
-system. Her practice blends traditional technique with a clean, printed
-presentation style.
+Kate has practised Tropical Western + Traditional/Hellenistic astrology for
+4+ years. She uses Placidus if you were born on or around the equator, and
+Whole Sign if you were born far north or south.
 
-## Full readings
+## Readings
 
-To go beyond the free chart generator and book a full reading with Kate,
-visit https://ko-fi.com/synastral.
+Full readings are available via https://ko-fi.com/slideshowastrology.
 
-## Chart prints
+## Shop
 
-Museum-grade prints of natal charts, plus related zines and small studio
-objects, are sold through Kate's Etsy shop at https://etsy.com/shop/synastral.
+Gallery-grade poster prints, year-ahead planners, and natal chart
+interpretations are available via https://www.etsy.com/shop/synastralco.
 
 ## Contact
 
