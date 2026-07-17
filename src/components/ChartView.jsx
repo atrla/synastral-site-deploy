@@ -37,24 +37,24 @@
         <div className="chart-view-actions">
           <button
             type="button"
-            className="continue-inline chart-action-secondary"
+            className="btn-ghost chart-action-secondary"
             onClick={onReturnToInput}
             disabled={chartLoading}
           >
-            Edit Birth Details
+            edit birth details
           </button>
           <button
             type="button"
-            className="continue-inline"
+            className="btn-ghost"
             onClick={handleCustomiseClick}
             aria-expanded={isCustomiseOpen}
             aria-controls="chart-customise-panel"
           >
-            {isCustomiseOpen ? 'Close Customisation' : 'Customise Chart'}
+            {isCustomiseOpen ? 'close customisation' : 'customise chart'}
           </button>
           <button
             type="button"
-            className="continue-inline chart-action-secondary"
+            className="btn-ghost chart-action-secondary"
             onClick={onExport}
             disabled={chartLoading || !chartSvg}
           >

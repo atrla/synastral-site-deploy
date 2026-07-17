@@ -2,6 +2,14 @@
   /* atelier astra — ink green · antique paper · moss · periwinkle */
   --cobalt:#0A3323; --sky:#8A94C8; --sky-ink:#66753F; --pale:#B7E0EA; --paper:#F7F4D5; --ink:#173626;
   --lilac:#9EA0DE; --peach:#839958; --moss:#839958; --rosy:#D3968C;
+  /* --sky-text: WP-2.6 contrast fix. --sky (#8A94C8) on --paper (#F7F4D5):
+       L(#8A94C8) = 0.3075, L(#F7F4D5) = 0.8928
+       contrast   = (0.8928 + 0.05) / (0.3075 + 0.05) = 2.64 : 1 → fails the 3:1 large-text floor
+     Darkened to #5F6BA8 (same hue family, lower lightness):
+       L(#5F6BA8) = 0.1578, L(#F7F4D5) = 0.8928
+       contrast   = (0.8928 + 0.05) / (0.1578 + 0.05) = 4.54 : 1 → passes >=3:1 (comfortably clears 4.5:1 too)
+     --sky stays untouched for borders/decoration/animation, which have no contrast requirement. */
+  --sky-text:#5F6BA8;
   --gutter:clamp(1rem,4vw,2.5rem);
   --section-space:clamp(1rem,2vw,4rem);
   --content-max:87.5rem;
@@ -18,6 +26,16 @@
   font-family:"Young Serif",Georgia,serif;transition:transform .15s,box-shadow .15s}
 .btn:hover{transform:translate(-.125rem,-.125rem);box-shadow:.25rem .25rem 0 rgba(10,51,35,.3)}
 .btn:active{transform:translate(0,0) scale(.985);box-shadow:.0625rem .0625rem 0 rgba(10,51,35,.25)}
+
+/* ---------- secondary/ghost button — formalised from the old .continue-inline styles ---------- */
+/* .continue-inline kept as an alias so any un-migrated markup still renders correctly */
+.btn-ghost,.continue-inline{width:100%;display:inline-flex;align-items:center;justify-content:center;
+  padding:.6875rem .8125rem;min-height:2.75rem;align-self:start;border:1px solid var(--sky);background:#f8f8f2;color:var(--ink);
+  font-family:inherit;font-size:1rem;line-height:1.5;letter-spacing:normal;text-transform:none;
+  cursor:pointer;margin:0;transition:border-color .2s ease,box-shadow .2s ease}
+.btn-ghost:hover,.continue-inline:hover{border-color:var(--cobalt);box-shadow:3px 3px 0 rgba(10,51,35,.12)}
+.btn-ghost:disabled,.continue-inline:disabled{opacity:.5;cursor:not-allowed;border-color:var(--sky)}
+.btn-ghost:focus-visible,.continue-inline:focus-visible{outline:2px solid var(--cobalt);outline-offset:2px}
 
 /* ---------- animations ---------- */
 @keyframes rise{from{opacity:0;transform:translateY(1.625rem)}to{opacity:1;transform:none}}

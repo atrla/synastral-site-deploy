@@ -22,7 +22,7 @@ footer .big .ser{color:#B7E0EA}
 .contact-links a:hover{transform:translate(-2px,-2px);background:rgba(255,255,255,.16);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.5),4px 4px 0 rgba(0,0,0,.15)}
 .contact-links a:active{transform:translate(0,0) scale(.985)}
-.contact-links .lab{font-size:.625rem;letter-spacing:.22em;text-transform:uppercase;color:#E3E7C9}
+.contact-links .lab{font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;color:#E3E7C9}
 .privacy-note{margin-top:3.75rem;margin-bottom:0;font-size:.75rem;line-height:1.5;color:#E3E7C9;opacity:.75;
   max-width:52ch;position:relative}
 footer .row{display:flex;flex-direction:column;align-items:flex-start;gap:1.25rem;

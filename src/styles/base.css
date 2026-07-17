@@ -50,8 +50,8 @@ nav .ext::after{content:" ↗";color:var(--sky)}
 
 /* ---------- data strip ---------- */
 .datastrip{display:flex;justify-content:space-between;gap:.75rem 1.75rem;flex-wrap:wrap;
-  padding:.4375rem var(--gutter);border-bottom:1px dashed var(--sky);font-size:.625rem;
-  letter-spacing:.16em;text-transform:uppercase;color:var(--sky-ink);
+  padding:.4375rem var(--gutter);border-bottom:1px dashed var(--sky);font-size:.75rem;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--sky-ink);
   background:rgba(255,255,255,.3)}
 .datastrip .accent{color:var(--cobalt)}
 
@@ -65,13 +65,14 @@ section::before{content:"";position:absolute;inset:0;pointer-events:none;z-index
 .star-rule span{display:inline-block;font-size:.875rem;line-height:1;color:var(--lilac);
   animation:spinstep var(--dur,30s) steps(12) infinite;animation-direction:var(--dir,normal)}
 .section-divider{padding:var(--section-space) var(--gutter)}
+/* decorative: exempt from type floor — scatter glyphs (✦ etc.) are ornament, not informational copy */
 .scatter{position:absolute;pointer-events:none;color:var(--lilac);opacity:.55;line-height:1;
   animation:spinstep var(--dur,44s) steps(8) infinite;animation-direction:var(--dir,normal)}
 .kicker{font-size:.6875rem;letter-spacing:.25em;text-transform:uppercase;color:var(--sky-ink);
   font-family:"Young Serif",Georgia,serif;margin-bottom:1.125rem}
 .kicker::before{content:"✳ ";color:var(--cobalt)}
 h2{font-size:clamp(1.875rem,4vw,3.375rem);letter-spacing:-.01em;font-weight:400;color:var(--cobalt)}
-h2 .lite{color:var(--sky)}
+h2 .lite{color:var(--sky-text)}
 
 /* ---------- shared cross-component fixes ---------- */
 /* grid-item overflow fix, used by hero/about/shop-band grid containers */

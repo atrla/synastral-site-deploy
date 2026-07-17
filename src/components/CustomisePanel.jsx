@@ -92,11 +92,11 @@ export default function CustomisePanel({ settings, visualSettings, chartOptions,
         <p className="t">customise</p>
         <div className="customise-panel-actions">
           <button type="button" className="customise-secondary" onClick={onReturnToInput}>
-            Edit Birth Details
+            edit birth details
           </button>
-          <button type="button" className="customise-close" onClick={onClose} aria-label="Back to chart">
+          <button type="button" className="customise-close" onClick={onClose} aria-label="back to chart">
             <span aria-hidden="true">&#10005;</span>
-            <span>Back to Chart</span>
+            <span>back to chart</span>
           </button>
         </div>
       </div>

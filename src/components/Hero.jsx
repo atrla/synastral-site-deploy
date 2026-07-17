@@ -463,8 +463,8 @@ export default function Hero() {
             )}
           </div>
           <div className="continue-action">
-            <button type="submit" className="continue-inline" disabled={!canGenerate || chartLoading}>
-              {chartLoading ? 'generating…' : 'CONTINUE'}
+            <button type="submit" className="btn-ghost" disabled={!canGenerate || chartLoading}>
+              {chartLoading ? 'generating…' : 'continue'}
             </button>
           </div>
         </div>
