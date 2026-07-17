@@ -1,4 +1,11 @@
-﻿export default function ChartView({
+import { useEffect, useRef, useState } from 'react'
+import { track } from '../utils/track.js'
+
+const COPY_CONFIRM_MS = 2500
+const COPIED_MESSAGE = 'copied ~'
+const COPY_ERROR_MESSAGE = "couldn't copy — copy the link from your address bar"
+
+export default function ChartView({
   chartSvg,
   chartLoading,
   chartError,
@@ -7,6 +14,7 @@
   onReturnToInput,
   onCloseCustomise,
   onExport,
+  shareUrl = '',
   isCustomiseOpen = false,
   panelRef,
   chartRef,
@@ -18,6 +26,13 @@
   showAspects = true,
   showShimmer = false,
 }) {
+  const [shareStatus, setShareStatus] = useState('')
+  const shareStatusTimerRef = useRef(null)
+
+  useEffect(() => () => {
+    if (shareStatusTimerRef.current) window.clearTimeout(shareStatusTimerRef.current)
+  }, [])
+
   const handleCustomiseClick = () => {
     if (isCustomiseOpen) {
       onCloseCustomise?.()
@@ -25,6 +40,25 @@
     }
 
     onCustomise?.()
+  }
+
+  const handleCopyLink = async () => {
+    if (!shareUrl) return
+
+    if (shareStatusTimerRef.current) window.clearTimeout(shareStatusTimerRef.current)
+
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      setShareStatus(COPIED_MESSAGE)
+      track('chart_shared')
+    } catch {
+      setShareStatus(COPY_ERROR_MESSAGE)
+    }
+
+    shareStatusTimerRef.current = window.setTimeout(() => {
+      setShareStatus('')
+      shareStatusTimerRef.current = null
+    }, COPY_CONFIRM_MS)
   }
 
   return (
@@ -55,6 +89,14 @@
           <button
             type="button"
             className="btn-ghost chart-action-secondary"
+            onClick={handleCopyLink}
+            disabled={!shareUrl}
+          >
+            copy link to this chart
+          </button>
+          <button
+            type="button"
+            className="btn-ghost chart-action-secondary"
             onClick={onExport}
             disabled={chartLoading || !chartSvg}
           >
@@ -62,6 +104,8 @@
           </button>
         </div>
       </div>
+
+      <p className="sr-only" role="status" aria-live="polite">{shareStatus}</p>
 
       {chartError && <div className="gen-alert mono">{chartError}</div>}
 

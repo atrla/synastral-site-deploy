@@ -83,6 +83,24 @@ h1 .line{display:block}
 .gen select{width:100%;border:1px solid var(--sky);background:#f8f8f2;
   padding:.6875rem .8125rem;font-family:inherit;font-size:1rem;color:var(--ink);margin-bottom:.875rem}
 .gen input::placeholder{color:#A2A578}
+
+/* Accessible places combobox (WP-3.2) — popup panel styled to match the
+   card look: paper background, --sky border/shadow, mono list items. */
+.combobox{position:relative}
+.combobox-popup{position:absolute;left:0;right:0;top:calc(100% - .875rem);z-index:30;
+  margin:0;padding:.25rem;list-style:none;
+  max-height:14rem;overflow-y:auto;
+  border:1px solid var(--sky);background:#f8f8f2;
+  box-shadow:8px 8px 0 rgba(138,148,200,.15),inset 0 1px 0 rgba(255,255,255,.85);
+  font-family:"DM Mono",monospace;font-size:.875rem;
+  animation:comboboxIn .18s ease both}
+.combobox-status{padding:.5rem .625rem;color:var(--sky-ink)}
+.combobox-option{padding:.5rem .625rem;color:var(--ink);cursor:pointer;
+  transition:background-color .15s ease,color .15s ease}
+.combobox-option:hover{background:rgba(138,148,200,.16)}
+.combobox-option.is-active{background:var(--cobalt);color:var(--paper)}
+.combobox-option.is-selected:not(.is-active){color:var(--cobalt);font-weight:600}
+@keyframes comboboxIn{from{opacity:0;transform:translateY(-.25rem)}to{opacity:1;transform:none}}
 .gen input:focus,.gen select:focus{outline:none;border-color:var(--cobalt);box-shadow:3px 3px 0 rgba(10,51,35,.18)}
 .gen input[aria-invalid="true"]{border-color:var(--rosy);background:rgba(211,150,140,.05)}
 .gen select[aria-invalid="true"]{border-color:var(--rosy);background:rgba(211,150,140,.05)}
@@ -425,20 +443,19 @@ h1 .line{display:block}
 @media(min-width:64em){
   .hero.hero-input{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
   .hero.hero-generating,.hero.hero-result,.hero.hero-customise{grid-template-columns:minmax(0,30%) minmax(0,70%)}
-  .hero.hero-generating,.hero.hero-result,.hero.hero-customise{height:70vh;max-height:70vh;overflow:visible;align-items:start}
+  .hero.hero-generating,.hero.hero-result,.hero.hero-customise{min-height:min(70vh,46rem);overflow:visible;align-items:start}
   .hero.hero-input .hero-left{order:1}
   .hero.hero-input .hero-right{order:2}
   .hero.hero-generating .hero-left,.hero.hero-result .hero-left,.hero.hero-customise .hero-left{order:1}
   .hero.hero-generating .hero-right,.hero.hero-result .hero-right,.hero.hero-customise .hero-right{order:2}
   .hero.hero-generating .hero-left,.hero.hero-result .hero-left,.hero.hero-customise .hero-left,
   .hero.hero-generating .hero-right,.hero.hero-result .hero-right,.hero.hero-customise .hero-right{height:100%;align-self:start}
-  .hero.hero-result .hero-left,.hero.hero-customise .hero-left{overflow:auto}
   .hero.hero-generating .hero-right,.hero.hero-result .hero-right,.hero.hero-customise .hero-right{display:flex;align-items:flex-start}
   .hero.hero-generating .hero-right .chart-stage-enter,.hero.hero-result .hero-right .chart-stage-enter,.hero.hero-customise .hero-right .chart-stage-enter{width:100%;display:flex;align-items:flex-start;justify-content:center}
 }
 
 @media(min-width:48em) and (max-width:63.99em){
-  .hero.hero-generating,.hero.hero-result,.hero.hero-customise{height:70vh;max-height:70vh;overflow:visible;align-items:start;align-content:start}
+  .hero.hero-generating,.hero.hero-result,.hero.hero-customise{min-height:min(70vh,46rem);overflow:visible;align-items:start;align-content:start}
   .hero.hero-generating .hero-left,.hero.hero-result .hero-left,.hero.hero-customise .hero-left,
   .hero.hero-generating .hero-right,.hero.hero-result .hero-right,.hero.hero-customise .hero-right{align-self:start}
   .hero.hero-generating .hero-right,.hero.hero-result .hero-right,.hero.hero-customise .hero-right{display:flex;align-items:flex-start}

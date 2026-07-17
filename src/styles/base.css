@@ -15,6 +15,10 @@ h1,h2,h3{text-wrap:balance}
 p{text-wrap:pretty}
 a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--cobalt);outline-offset:3px}
 
+/* visually-hidden but screen-reader-accessible — used for aria-live status regions */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
 /* skip link — first focusable element, hidden until focused */
 .skip-link{position:absolute;left:12px;top:-60px;z-index:200;background:var(--cobalt);color:var(--paper);
   padding:12px 20px;font-size:12px;letter-spacing:.08em;text-decoration:none;transition:top .2s ease}

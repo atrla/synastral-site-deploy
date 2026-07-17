@@ -1,15 +1,18 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import Dither from './Dither.jsx'
 import ChartView from './ChartView.jsx'
 import CustomisePanel from './CustomisePanel.jsx'
 import ResultUpsell from './ResultUpsell.jsx'
+import PlaceCombobox from './PlaceCombobox.jsx'
 import { useChartApi } from '../hooks/useChartApi.js'
-import { normalizePlaceOption, resolvePlaceSelection } from '../utils/placeOptions.js'
+import { INITIAL_PLACE_SELECTION_STATE, normalizePlaceOption, placeSelectionReducer } from '../utils/placeOptions.js'
 import { buildDefaultWheelConfig } from '../utils/chartDefaults.js'
 import { formatBirthTime } from '../utils/birthTime.js'
 import { sanitizeFileStem } from '../utils/files.js'
 import { exportChart } from '../utils/exportChart.js'
 import { track } from '../utils/track.js'
+import { buildShareUrl, parseShareParams, splitTime24 } from '../utils/shareParams.js'
+import { SITE_URL } from '../config/site.js'
 import '../styles/hero.css'
 
 const FIELD_ERRORS = {
@@ -52,7 +55,8 @@ export default function Hero() {
   const timeMeridiemRef = useRef(null)
   const placeRef = useRef(null)
 
-  const [values, setValues] = useState({ date: '', timeHour: '', timeMinute: '', timeMeridiem: DEFAULT_MERIDIEM, place: '', lat: '', lon: '' })
+  const [values, setValues] = useState({ date: '', timeHour: '', timeMinute: '', timeMeridiem: DEFAULT_MERIDIEM })
+  const [placeState, dispatchPlace] = useReducer(placeSelectionReducer, INITIAL_PLACE_SELECTION_STATE)
   const [errors, setErrors] = useState({})
   const [placeOptions, setPlaceOptions] = useState([])
   const [placesLoading, setPlacesLoading] = useState(false)
@@ -82,6 +86,8 @@ export default function Hero() {
   const chartDebounceRef = useRef(null)
   const stageTimerRef = useRef(null)
   const resetTimerRef = useRef(null)
+  const shareAutoGenRef = useRef(false)
+  const [pendingShareGenerate, setPendingShareGenerate] = useState(false)
 
   const onGenMove = (e) => {
     const gen = genRef.current
@@ -92,26 +98,40 @@ export default function Hero() {
   }
 
   const setField = (key) => (e) => {
-    const next = { ...values, [key]: e.target.value }
-    if (key === 'place') {
-      const { lat, lon } = resolvePlaceSelection(e.target.value, placeOptions)
-      next.lat = lat
-      next.lon = lon
-    }
-    setValues(next)
+    setValues({ ...values, [key]: e.target.value })
+  }
+
+  const handlePlaceTextChange = (text) => {
+    dispatchPlace({ type: 'CHANGE_TEXT', text })
+  }
+
+  const handlePlaceSelect = (option) => {
+    dispatchPlace({ type: 'SELECT', option })
   }
 
   const validateRequired = () => {
     const next = {}
     if (!values.date.trim()) next.date = FIELD_ERRORS.date
     if (!formatBirthTime({ hour: values.timeHour, minute: values.timeMinute, meridiem: values.timeMeridiem })) next.time = FIELD_ERRORS.time
-    if (!values.place.trim() || !values.lat || !values.lon) next.place = FIELD_ERRORS.place
+    if (!placeState.place.trim() || placeState.selectedPlace === null) next.place = FIELD_ERRORS.place
     setErrors(next)
     return Object.keys(next).length === 0
   }
 
   const birthTime = formatBirthTime({ hour: values.timeHour, minute: values.timeMinute, meridiem: values.timeMeridiem })
-  const canGenerate = Boolean(values.date && birthTime && values.lat && values.lon)
+  const canGenerate = Boolean(values.date && birthTime && placeState.selectedPlace)
+
+  // Only offer a share link once there's an actual chart to point at —
+  // matches the "copy link to this chart" button's disabled state.
+  const shareUrl = (chartLoaded && canGenerate)
+    ? buildShareUrl({
+        date: values.date,
+        time: birthTime,
+        lat: placeState.selectedPlace.lat,
+        lon: placeState.selectedPlace.lon,
+        place: placeState.selectedPlace.label,
+      }, SITE_URL)
+    : ''
 
   const generateChart = useCallback(async ({ force = false, wheelConfigOverride, chartOptionsOverride } = {}) => {
     if (!canGenerate) return false
@@ -128,8 +148,8 @@ export default function Hero() {
       const body = {
         birth_date: values.date,
         birth_time: birthTime,
-        birth_lat: Number(values.lat),
-        birth_lon: Number(values.lon),
+        birth_lat: placeState.selectedPlace.lat,
+        birth_lon: placeState.selectedPlace.lon,
         house_system: optionsForRequest.house_system,
         include_minor_aspects: optionsForRequest.include_minor_aspects,
         wheel_config: configForRequest,
@@ -170,21 +190,21 @@ export default function Hero() {
     } finally {
       if (seq === requestSeq.current) setChartLoading(false)
     }
-  }, [apiGenerateChart, birthTime, canGenerate, chartLoaded, values.date, values.lat, values.lon, wheelConfig, chartOptions])
+  }, [apiGenerateChart, birthTime, canGenerate, chartLoaded, values.date, placeState.selectedPlace, wheelConfig, chartOptions])
 
   useEffect(() => {
-    if (values.place.trim().length < 2) {
+    if (placeState.place.trim().length < 2) {
       setPlaceOptions([])
       setPlacesLoading(false)
       return
     }
 
-    const query = values.place.trim()
+    const query = placeState.place.trim()
     const handle = window.setTimeout(async () => {
       setPlacesLoading(true)
       try {
         const data = await fetchPlaceOptions(query)
-        if (values.place.trim() === query) {
+        if (placeState.place.trim() === query) {
           setPlaceOptions(data.map(normalizePlaceOption))
         }
       } catch {
@@ -195,7 +215,7 @@ export default function Hero() {
     }, 250)
 
     return () => window.clearTimeout(handle)
-  }, [fetchPlaceOptions, values.place])
+  }, [fetchPlaceOptions, placeState.place])
 
   const triggerPreviewPulse = useCallback((group) => {
     setPreviewPulseGroup(group || 'frame')
@@ -253,6 +273,56 @@ export default function Hero() {
     if (resetTimerRef.current) window.clearTimeout(resetTimerRef.current)
   }, [])
 
+  // WP-3.3 share loop, step 1: on first mount only, look for a share link's
+  // query params (?d=&t=&lat=&lon=&place=). Invalid or partial params are
+  // ignored silently — this is a convenience prefill, never a required
+  // flow. A valid link prefills the form and hands off to the effect below,
+  // which fires the actual (single) auto-generate once that state lands.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (shareAutoGenRef.current) return
+    shareAutoGenRef.current = true
+
+    const parsed = parseShareParams(window.location.search)
+    if (!parsed) return
+
+    const split = splitTime24(parsed.time)
+    if (!split) return
+
+    track('chart_link_opened')
+    setValues({ date: parsed.date, timeHour: split.hour, timeMinute: split.minute, timeMeridiem: split.meridiem })
+    dispatchPlace({ type: 'SELECT', option: { label: parsed.place, lat: parsed.lat, lon: parsed.lon } })
+    setPendingShareGenerate(true)
+  }, [])
+
+  // WP-3.3 share loop, step 2: fires once the prefilled values/place from
+  // the effect above are actually reflected in state and pass the same
+  // `canGenerate` gate the manual "continue" button uses. Rate-limit
+  // awareness (COMMON CONTEXT rule 9): this is the single auto-generate
+  // call for a shared link — `pendingShareGenerate` is cleared before the
+  // request fires, so nothing here can re-arm it, and a 429 surfaces
+  // through `generateChart`'s existing RATE_LIMIT_MESSAGE path rather than
+  // a separate error UI or a retry.
+  useEffect(() => {
+    if (!pendingShareGenerate || !canGenerate) return
+    setPendingShareGenerate(false)
+
+    let cancelled = false
+    generateChart({ force: true }).then((success) => {
+      if (cancelled || !success) return
+      setResultEntered(false)
+      setViewMode('generating')
+      if (stageTimerRef.current) window.clearTimeout(stageTimerRef.current)
+      stageTimerRef.current = window.setTimeout(() => {
+        setViewMode('result')
+        setResultEntered(true)
+        stageTimerRef.current = null
+      }, STAGE_TRANSITION_MS)
+    })
+
+    return () => { cancelled = true }
+  }, [pendingShareGenerate, canGenerate, generateChart])
+
   const resetExperience = useCallback(({ preserveValues = true } = {}) => {
     requestSeq.current += 1
     rateLimitedUntilRef.current = 0
@@ -291,7 +361,8 @@ export default function Hero() {
     setVisualSettings(DEFAULT_VISUAL_SETTINGS)
 
     if (!preserveValues) {
-      setValues({ date: '', timeHour: '', timeMinute: '', timeMeridiem: DEFAULT_MERIDIEM, place: '', lat: '', lon: '' })
+      setValues({ date: '', timeHour: '', timeMinute: '', timeMeridiem: DEFAULT_MERIDIEM })
+      dispatchPlace({ type: 'RESET' })
     }
   }, [])
 
@@ -324,7 +395,7 @@ export default function Hero() {
               ? timeMeridiemRef
               : !formatBirthTime({ hour: values.timeHour, minute: values.timeMinute, meridiem: values.timeMeridiem })
                 ? timeHourRef
-                : !values.place.trim() || !values.lat || !values.lon
+                : !placeState.place.trim() || placeState.selectedPlace === null
                   ? placeRef
                   : timeHourRef
       firstBad.current?.focus()
@@ -447,18 +518,22 @@ export default function Hero() {
           </div>
           <div>
             <label htmlFor="g-place">place of birth</label>
-            <input id="g-place" name="birth-place" type="text" autoComplete="address-level2" placeholder="city, country"
-              required ref={placeRef} value={values.place} onChange={setField('place')}
-              list="g-place-list"
-              aria-invalid={errors.place ? 'true' : undefined}
-              aria-describedby={errors.place ? 'g-place-err' : 'g-place-hint'} />
-            <datalist id="g-place-list">
-              {placeOptions.map((option) => (
-                <option key={`${option.label}-${option.lat}-${option.lon}`} value={option.label} />
-              ))}
-            </datalist>
+            <PlaceCombobox
+              id="g-place"
+              inputRef={placeRef}
+              value={placeState.place}
+              onValueChange={handlePlaceTextChange}
+              options={placeOptions}
+              loading={placesLoading}
+              selected={placeState.selectedPlace}
+              onSelect={handlePlaceSelect}
+              placeholder="city, country"
+              autoComplete="address-level2"
+              invalid={Boolean(errors.place)}
+              describedBy={errors.place ? 'g-place-err' : 'g-place-hint'}
+            />
             {errors.place && <p className="field-err mono" id="g-place-err">{errors.place}</p>}
-            {!errors.place && values.place && !values.lat && !values.lon && (
+            {!errors.place && placeState.place && placeState.selectedPlace === null && (
               <p className="field-err mono" id="g-place-hint">select one of the suggested places</p>
             )}
           </div>
@@ -509,6 +584,7 @@ export default function Hero() {
               onReturnToInput={handleReturnToInput}
               onCloseCustomise={handleCloseCustomise}
               onExport={handleExportChart}
+              shareUrl={shareUrl}
               isCustomiseOpen={viewMode === 'customising'}
               panelRef={genRef}
               outputClassName={outputClassName}

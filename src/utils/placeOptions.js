@@ -52,18 +52,31 @@ export function normalizePlaceOption(option = {}) {
   }
 }
 
-export function resolvePlaceSelection(value, options = []) {
-  const normalizedValue = String(value ?? '').trim().toLowerCase()
-  if (!normalizedValue) return { lat: '', lon: '' }
+// Selection state for the accessible places combobox (WP-3.2). The selected
+// option object (or null) is the single source of truth for "is a place
+// chosen" — no more string-matching the input value against option labels.
+export const INITIAL_PLACE_SELECTION_STATE = { place: '', selectedPlace: null }
 
-  const match = options
-    .map(normalizePlaceOption)
-    .find((option) => {
-      const label = option.label.trim().toLowerCase()
-      return label && (label === normalizedValue || label.startsWith(normalizedValue) || normalizedValue.startsWith(label))
-    })
+export function placeSelectionReducer(state, action) {
+  switch (action.type) {
+    // Typing always clears any prior selection — the previously selected
+    // option no longer necessarily corresponds to what's in the input.
+    case 'CHANGE_TEXT':
+      return { place: action.text, selectedPlace: null }
+    case 'SELECT':
+      return { place: action.option.label, selectedPlace: action.option }
+    case 'RESET':
+      return { ...INITIAL_PLACE_SELECTION_STATE }
+    default:
+      return state
+  }
+}
 
-  if (!match) return { lat: '', lon: '' }
-
-  return { lat: String(match.lat), lon: String(match.lon) }
+// Pure helper for Up/Down keyboard navigation through the listbox: wraps
+// around at either end, and lands on the first/last item when nothing is
+// highlighted yet (current === -1).
+export function nextComboboxIndex(current, length, direction) {
+  if (!length) return -1
+  if (current < 0) return direction > 0 ? 0 : length - 1
+  return (current + direction + length) % length
 }

@@ -73,7 +73,7 @@ export function Footer() {
         <a href={emailHref}><span className="lab">email</span> {EMAIL}</a>
         <a href={TIKTOK_URL} rel="noopener"><span className="lab">tiktok</span> @slideshowastrology ↗</a>
       </div>
-      <p className="privacy-note mono">the chart generator above doesn't store your birth details — no account, nothing sold. analytics cookies only if you say yes.</p>
+      <p className="privacy-note mono">the chart generator above doesn't store your birth details — no account, nothing sold. analytics cookies only if you say yes. share links contain the birth details you chose to share.</p>
       <div className="row mono">
         <span>synastral — est. in the stars · [ end of record ]</span>
         <span><a href="#top">home</a> / <a href="#chart">birth chart</a> / <a href={KOFI_URL} rel="noopener" onClick={() => track('outbound_kofi', { source: 'footer' })}>chart readings ↗</a> / <a href={shopUrl} rel="noopener" onClick={() => track('outbound_etsy', { source: 'footer' })}>shop ↗</a> / <a href="#contact">contact</a></span>
