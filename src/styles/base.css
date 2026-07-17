@@ -79,6 +79,16 @@ h2 .lite{color:var(--sky)}
 /* consistent photo desaturation treatment on the two "printed" images */
 .print-frame img,.shop-visual img{filter:hue-rotate(12deg) saturate(.78)}
 
+/* ---------- error boundary fallback ---------- */
+.error-boundary{min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:1.25rem;padding:var(--gutter);text-align:center;
+  background:var(--paper);color:var(--ink)}
+.error-boundary-glyph{font-size:2.5rem;line-height:1;color:var(--cobalt);
+  animation:spinstep 30s steps(12) infinite}
+.error-boundary-message{font-family:"Crimson Pro",Georgia,serif;font-size:1.0625rem;
+  letter-spacing:.01em;max-width:26rem}
+.error-boundary-action{margin-top:.25rem}
+
 @media(max-width:63.99em){
   nav{flex-wrap:wrap;row-gap:.5rem}
   nav .nav-toggle{display:inline-flex}

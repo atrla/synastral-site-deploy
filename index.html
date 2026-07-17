@@ -1,6 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Microsoft Clarity tag -->
+<script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "xnzyz0tedn");
+</script>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-GNDQG2DZ0D"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-GNDQG2DZ0D');
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Synastral — free birth chart generator · astrology by Kate</title>
@@ -22,11 +40,6 @@
 <meta name="twitter:image" content="https://synastral.com/assets/og-image.jpg">
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<!-- href/imagesrcset point at src/assets so Vite content-hashes this the same
-     way as the component's own `?url` import. Vite's HTML asset pipeline
-     only rewrites a fixed list of src/href attributes and does not know
-     about `imagesrcset`, so scripts/prerender.mjs patches `imagesrcset`
-     after `vite build` with the real hashed filenames found in dist/assets/. -->
 <link rel="preload" as="image" href="/src/assets/03-chart-wheel-640.webp" imagesrcset="/src/assets/03-chart-wheel-640.webp 640w, /src/assets/03-chart-wheel-1280.webp 1280w" imagesizes="(max-width: 900px) 90vw, 600px" fetchpriority="high">
 <script type="application/ld+json">
 {
@@ -97,6 +110,7 @@
   ]
 }
 </script>
+
 </head>
 <body>
 <div id="root"></div>

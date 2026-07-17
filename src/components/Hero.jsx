@@ -3,6 +3,7 @@ import Dither from './Dither.jsx'
 import ChartView from './ChartView.jsx'
 import CustomisePanel from './CustomisePanel.jsx'
 import ResultUpsell from './ResultUpsell.jsx'
+import { useChartApi } from '../hooks/useChartApi.js'
 import { normalizePlaceOption, resolvePlaceSelection } from '../utils/placeOptions.js'
 import { buildDefaultWheelConfig } from '../utils/chartDefaults.js'
 import { formatBirthTime } from '../utils/birthTime.js'
@@ -10,12 +11,6 @@ import { sanitizeFileStem } from '../utils/files.js'
 import { exportChart } from '../utils/exportChart.js'
 import '../styles/hero.css'
 
-const API_BASE = (import.meta.env.VITE_CHART_API_BASE || '').trim()
-const buildApiUrl = (path) => {
-  const normalizedPath = path.replace(/^\/+/, '')
-  if (!API_BASE) return `/${normalizedPath}`
-  return `${API_BASE.replace(/\/+$/, '')}/${normalizedPath}`
-}
 const FIELD_ERRORS = {
   date: 'enter a date of birth',
   time: 'enter a time of birth',
@@ -46,6 +41,7 @@ const RATE_LIMIT_COOLDOWN_MS = 5000
 const RATE_LIMIT_MESSAGE = "you're customising quickly — give it a moment ~"
 
 export default function Hero() {
+  const { generateChart: apiGenerateChart, fetchPlaceOptions } = useChartApi()
   const heroRef = useRef(null)
   const genRef = useRef(null)
   const printChartRef = useRef(null)
@@ -137,37 +133,33 @@ export default function Hero() {
         include_minor_aspects: optionsForRequest.include_minor_aspects,
         wheel_config: configForRequest,
       }
-      const response = await fetch(buildApiUrl('api/chart/generate'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
+      const result = await apiGenerateChart(body)
 
       if (seq !== requestSeq.current) return false
 
-      if (response.status === 429) {
+      if (result.status === 'rate-limited') {
         setChartError(RATE_LIMIT_MESSAGE)
         rateLimitedUntilRef.current = Date.now() + RATE_LIMIT_COOLDOWN_MS
         return false
       }
 
-      const payload = await response.json()
-      if (!response.ok) {
-        setChartError(payload.detail || 'couldn\'t generate chart \u2014 check your inputs')
+      if (result.status === 'error') {
+        setChartError(result.message)
         return false
       }
 
-      // The real chart-api response is `{ chart_data, svg }` \u2014 there is no
+      // The real chart-api response is `{ chart_data, svg }` — there is no
       // `wheel_config` field. Chart rendering is stateless/deterministic (the
       // server renders exactly what was sent), so the client-held wheelConfig/
       // chartOptions state is already authoritative and needs no merge back.
-      setChartSvg(payload.svg || '')
+      // `result.svg` is already sanitised (useChartApi.js) before it reaches us.
+      setChartSvg(result.svg)
       setChartError('')
       setChartLoaded(true)
       // chart_data (houses/placements/aspects) isn't consumed by any UI yet,
       // but we keep it around for a future accessible text summary or data
       // table view of the chart.
-      setChartData(payload.chart_data || null)
+      setChartData(result.chartData)
       return true
     } catch {
       if (seq !== requestSeq.current) return false
@@ -176,7 +168,7 @@ export default function Hero() {
     } finally {
       if (seq === requestSeq.current) setChartLoading(false)
     }
-  }, [birthTime, canGenerate, chartLoaded, values.date, values.lat, values.lon, wheelConfig, chartOptions])
+  }, [apiGenerateChart, birthTime, canGenerate, chartLoaded, values.date, values.lat, values.lon, wheelConfig, chartOptions])
 
   useEffect(() => {
     if (values.place.trim().length < 2) {
@@ -189,14 +181,9 @@ export default function Hero() {
     const handle = window.setTimeout(async () => {
       setPlacesLoading(true)
       try {
-        const response = await fetch(`${buildApiUrl('api/chart/places')}?q=${encodeURIComponent(query)}`)
-        if (!response.ok) {
-          setPlaceOptions([])
-          return
-        }
-        const data = await response.json()
+        const data = await fetchPlaceOptions(query)
         if (values.place.trim() === query) {
-          setPlaceOptions(Array.isArray(data) ? data.map(normalizePlaceOption) : [])
+          setPlaceOptions(data.map(normalizePlaceOption))
         }
       } catch {
         setPlaceOptions([])
@@ -206,7 +193,7 @@ export default function Hero() {
     }, 250)
 
     return () => window.clearTimeout(handle)
-  }, [values.place])
+  }, [fetchPlaceOptions, values.place])
 
   const triggerPreviewPulse = useCallback((group) => {
     setPreviewPulseGroup(group || 'frame')
@@ -473,7 +460,7 @@ export default function Hero() {
           </div>
           <div className="continue-action">
             <button type="submit" className="continue-inline" disabled={!canGenerate || chartLoading}>
-              {chartLoading ? 'generating\u2026' : 'CONTINUE'}
+              {chartLoading ? 'generating…' : 'CONTINUE'}
             </button>
           </div>
         </div>

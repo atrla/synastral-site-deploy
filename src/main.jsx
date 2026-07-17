@@ -20,6 +20,7 @@ import '@fontsource/crimson-pro/latin-600.css'
 import '@fontsource/dm-mono/latin-400.css'
 
 import App from './App.jsx'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 
 // WP8: the built dist/index.html is prerendered (see scripts/prerender.mjs)
 // so #root already contains real markup in production — hydrateRoot lets
@@ -31,7 +32,9 @@ import App from './App.jsx'
 const rootEl = document.getElementById('root')
 const app = (
   <React.StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </React.StrictMode>
 )
 
