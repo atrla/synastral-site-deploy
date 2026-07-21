@@ -17,7 +17,7 @@ function parseSvg(markup) {
 
 const baseVisualSettings = {
   theme: 'ink',
-  background: 'transparent',
+  background: 'white',
   line_width: 1.5,
   glyph_size: 16,
   font_size: 11,
@@ -33,10 +33,12 @@ describe('pruneHiddenGroups', () => {
     expect(svg.querySelectorAll('.aspects-group')).toHaveLength(1)
   })
 
-  it('removes .aspects-group when show_aspects is false', () => {
-    const svg = parseSvg(`<svg xmlns="${SVG_NS}"><g class="planets-group"></g><g class="aspects-group"></g></svg>`)
+  it('removes aspect primitives when show_aspects is false', () => {
+    const svg = parseSvg(`<svg xmlns="${SVG_NS}"><g class="planets-group"></g><g class="aspects-group"><line class="aspect-line"></line><path class="aspect-mark"></path></g></svg>`)
     pruneHiddenGroups(svg, { ...baseVisualSettings, show_aspects: false })
-    expect(svg.querySelectorAll('.aspects-group')).toHaveLength(0)
+    expect(svg.querySelectorAll('.aspects-group')).toHaveLength(1)
+    expect(svg.querySelectorAll('.aspect-line')).toHaveLength(0)
+    expect(svg.querySelectorAll('.aspect-mark')).toHaveLength(0)
     expect(svg.querySelectorAll('.planets-group')).toHaveLength(1)
   })
 
@@ -50,10 +52,11 @@ describe('pruneHiddenGroups', () => {
   it('matches nodes defensively even when other/unshipped classes are also present', () => {
     // The API's render path is queueing more classes (element-tint / aspect-mark)
     // that aren't shipped yet. A class-presence selector must still match.
-    const svg = parseSvg(`<svg xmlns="${SVG_NS}"><g class="planets-group element-tint"></g><g class="aspect-mark aspects-group"></g></svg>`)
+    const svg = parseSvg(`<svg xmlns="${SVG_NS}"><g class="planets-group element-tint"></g><g class="aspects-group"><g class="aspect-mark"></g></g></svg>`)
     pruneHiddenGroups(svg, { ...baseVisualSettings, show_placements: false, show_aspects: false })
     expect(svg.querySelectorAll('.planets-group')).toHaveLength(0)
-    expect(svg.querySelectorAll('.aspects-group')).toHaveLength(0)
+    expect(svg.querySelectorAll('.aspects-group')).toHaveLength(1)
+    expect(svg.querySelectorAll('.aspect-mark')).toHaveLength(0)
   })
 })
 
@@ -101,18 +104,18 @@ describe('embedFont / buildFontFaceStyleElement', () => {
 })
 
 describe('computeExportDimensions', () => {
-  it('keeps the width and extends height by a ~4% attribution band', () => {
+  it('renders at 2x and extends height by a ~4% attribution band', () => {
     const dims = computeExportDimensions(1000, 1000)
-    expect(dims.width).toBe(1000)
-    expect(dims.chartHeight).toBe(1000)
-    expect(dims.bandHeight).toBe(40)
-    expect(dims.height).toBe(1040)
+    expect(dims.width).toBe(2000)
+    expect(dims.chartHeight).toBe(2000)
+    expect(dims.bandHeight).toBe(80)
+    expect(dims.height).toBe(2080)
   })
 
   it('rounds fractional viewBox dimensions', () => {
     const dims = computeExportDimensions(500.4, 501.6)
-    expect(dims.width).toBe(500)
-    expect(dims.chartHeight).toBe(502)
+    expect(dims.width).toBe(1001)
+    expect(dims.chartHeight).toBe(1003)
     expect(dims.height).toBe(dims.chartHeight + dims.bandHeight)
   })
 })
@@ -125,6 +128,11 @@ describe('getAttributionStyle (attribution present in the export path)', () => {
   it('derives the colour from wheelConfig.ink at 0.65 alpha', () => {
     const style = getAttributionStyle({ ink: '#0A3323' })
     expect(style.color).toBe('rgba(10, 51, 35, 0.65)')
+  })
+
+  it('forces monochrome attribution colour for B&W exports', () => {
+    const style = getAttributionStyle({ ink: '#0A3323' }, true)
+    expect(style.color).toBe('rgba(0, 0, 0, 0.65)')
   })
 
   it('falls back gracefully when wheelConfig is missing', () => {

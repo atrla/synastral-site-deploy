@@ -52,6 +52,49 @@ export function normalizePlaceOption(option = {}) {
   }
 }
 
+function normalizeQuery(query) {
+  if (typeof query !== 'string') return ''
+  const trimmed = query.trim().toLowerCase()
+  if (!trimmed) return ''
+  return trimmed.split(',')[0].trim()
+}
+
+function cityFromLabel(label) {
+  if (typeof label !== 'string') return ''
+  return label.split(',')[0].trim().toLowerCase()
+}
+
+function scoreOption(option, normalizedQuery) {
+  if (!normalizedQuery || normalizedQuery.length < 4) return 0
+  const label = typeof option?.label === 'string' ? option.label.trim().toLowerCase() : ''
+  if (!label) return 0
+
+  const isPrefixMatch = label.startsWith(normalizedQuery)
+  const isExactCityMatch = cityFromLabel(label) === normalizedQuery
+
+  if (isPrefixMatch && isExactCityMatch) return 3
+  if (isPrefixMatch) return 2
+  if (isExactCityMatch) return 1
+  return 0
+}
+
+export function prioritisePlaceOptions(options, query) {
+  const source = Array.isArray(options) ? options : []
+  const normalizedQuery = normalizeQuery(query)
+
+  if (!normalizedQuery || normalizedQuery.length < 4) {
+    return [...source]
+  }
+
+  return source
+    .map((option, index) => ({ option, index, score: scoreOption(option, normalizedQuery) }))
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score
+      return a.index - b.index
+    })
+    .map(({ option }) => option)
+}
+
 // Selection state for the accessible places combobox (WP-3.2). The selected
 // option object (or null) is the single source of truth for "is a place
 // chosen" — no more string-matching the input value against option labels.

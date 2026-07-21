@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import viteCompression from 'vite-plugin-compression'
+import { compression } from 'vite-plugin-compression2'
 
 // base './' so the built site works from any static host / subfolder
 export default defineConfig({
@@ -14,7 +14,7 @@ export default defineConfig({
     // automatically when the sibling file exists; hosts that don't
     // support this just ignore the extra files — no runtime cost either
     // way since they never touch the JS bundle Vite serves by default).
-    viteCompression({ algorithm: 'gzip', ext: '.gz', deleteOriginFile: false }),
-    viteCompression({ algorithm: 'brotliCompress', ext: '.br', deleteOriginFile: false }),
+    compression({ algorithm: 'gzip', ext: '.gz', deleteOriginFile: false }),
+    compression({ algorithm: 'brotliCompress', ext: '.br', deleteOriginFile: false }),
   ],
 })

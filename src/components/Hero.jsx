@@ -5,14 +5,18 @@ import CustomisePanel from './CustomisePanel.jsx'
 import ResultUpsell from './ResultUpsell.jsx'
 import PlaceCombobox from './PlaceCombobox.jsx'
 import { useChartApi } from '../hooks/useChartApi.js'
-import { INITIAL_PLACE_SELECTION_STATE, normalizePlaceOption, placeSelectionReducer } from '../utils/placeOptions.js'
+import {
+  INITIAL_PLACE_SELECTION_STATE,
+  normalizePlaceOption,
+  placeSelectionReducer,
+  prioritisePlaceOptions,
+} from '../utils/placeOptions.js'
 import { buildDefaultWheelConfig } from '../utils/chartDefaults.js'
 import { formatBirthTime } from '../utils/birthTime.js'
 import { sanitizeFileStem } from '../utils/files.js'
 import { exportChart } from '../utils/exportChart.js'
 import { track } from '../utils/track.js'
-import { buildShareUrl, parseShareParams, splitTime24 } from '../utils/shareParams.js'
-import { SITE_URL } from '../config/site.js'
+import { parseShareParams, splitTime24 } from '../utils/shareParams.js'
 import '../styles/hero.css'
 
 const FIELD_ERRORS = {
@@ -30,7 +34,7 @@ const DEFAULT_CHART_OPTIONS = {
 
 const DEFAULT_VISUAL_SETTINGS = {
   theme: 'ink',
-  background: 'transparent',
+  background: 'white',
   line_width: 1.5,
   glyph_size: 16,
   font_size: 11,
@@ -40,9 +44,42 @@ const DEFAULT_VISUAL_SETTINGS = {
 
 const RESET_TRANSITION_MS = 260
 const STAGE_TRANSITION_MS = 360
-const CHART_REFRESH_DEBOUNCE_MS = 700
+const SUBMIT_LOADING_MS = 3000
 const RATE_LIMIT_COOLDOWN_MS = 5000
 const RATE_LIMIT_MESSAGE = "you're customising quickly — give it a moment ~"
+const TIME_INPUT_RE = /^(\d{1,2}):(\d{2})$/
+
+function parseBirthTimeInput(time) {
+  const match = TIME_INPUT_RE.exec(String(time || '').trim())
+  if (!match) return null
+
+  const hour = Number(match[1])
+  const minute = Number(match[2])
+  if (!Number.isInteger(hour) || hour < 1 || hour > 12) return null
+  if (!Number.isInteger(minute) || minute < 0 || minute > 59) return null
+
+  return { hour: String(hour), minute: String(minute).padStart(2, '0') }
+}
+
+function getChangedPatch(base, draft) {
+  return Object.keys(draft).reduce((patch, key) => {
+    if (base[key] !== draft[key]) patch[key] = draft[key]
+    return patch
+  }, {})
+}
+
+function hasObjectChanges(base, draft) {
+  return Object.keys(draft).some((key) => base[key] !== draft[key])
+}
+
+function resolveVisualPulseGroup(patch) {
+  if ('show_placements' in patch) return 'placements'
+  if ('show_aspects' in patch) return 'aspects'
+  if ('line_width' in patch) return 'lines'
+  if ('glyph_size' in patch) return 'glyphs'
+  if ('font_size' in patch) return 'text'
+  return 'surface'
+}
 
 export default function Hero() {
   const { generateChart: apiGenerateChart, fetchPlaceOptions } = useChartApi()
@@ -50,18 +87,20 @@ export default function Hero() {
   const genRef = useRef(null)
   const printChartRef = useRef(null)
   const dateRef = useRef(null)
-  const timeHourRef = useRef(null)
-  const timeMinuteRef = useRef(null)
+  const timeRef = useRef(null)
   const timeMeridiemRef = useRef(null)
   const placeRef = useRef(null)
+  const submitLoadingTimerRef = useRef(null)
 
-  const [values, setValues] = useState({ date: '', timeHour: '', timeMinute: '', timeMeridiem: DEFAULT_MERIDIEM })
+  const [values, setValues] = useState({ date: '', time: '', timeMeridiem: DEFAULT_MERIDIEM })
   const [placeState, dispatchPlace] = useReducer(placeSelectionReducer, INITIAL_PLACE_SELECTION_STATE)
   const [errors, setErrors] = useState({})
   const [placeOptions, setPlaceOptions] = useState([])
   const [placesLoading, setPlacesLoading] = useState(false)
   const [wheelConfig, setWheelConfig] = useState(() => buildDefaultWheelConfig())
+  const [wheelDraftConfig, setWheelDraftConfig] = useState(() => buildDefaultWheelConfig())
   const [chartOptions, setChartOptions] = useState(DEFAULT_CHART_OPTIONS)
+  const [chartDraftOptions, setChartDraftOptions] = useState(DEFAULT_CHART_OPTIONS)
   const [chartSvg, setChartSvg] = useState('')
   // Raw chart_data from the generate response (houses/placements/aspects).
   // Not consumed by any UI yet — reserved for a future accessible text
@@ -77,13 +116,10 @@ export default function Hero() {
   const [visualSettings, setVisualSettings] = useState(DEFAULT_VISUAL_SETTINGS)
   const [previewPulseGroup, setPreviewPulseGroup] = useState('')
   const [previewPulseNonce, setPreviewPulseNonce] = useState(0)
+  const [submitLoading, setSubmitLoading] = useState(false)
 
   const requestSeq = useRef(0)
   const rateLimitedUntilRef = useRef(0)
-  const visualDebounceRef = useRef(null)
-  const visualPatchRef = useRef({})
-  const visualPulseRef = useRef('frame')
-  const chartDebounceRef = useRef(null)
   const stageTimerRef = useRef(null)
   const resetTimerRef = useRef(null)
   const shareAutoGenRef = useRef(false)
@@ -112,26 +148,23 @@ export default function Hero() {
   const validateRequired = () => {
     const next = {}
     if (!values.date.trim()) next.date = FIELD_ERRORS.date
-    if (!formatBirthTime({ hour: values.timeHour, minute: values.timeMinute, meridiem: values.timeMeridiem })) next.time = FIELD_ERRORS.time
+    if (!parseBirthTimeInput(values.time)) next.time = FIELD_ERRORS.time
     if (!placeState.place.trim() || placeState.selectedPlace === null) next.place = FIELD_ERRORS.place
     setErrors(next)
     return Object.keys(next).length === 0
   }
 
-  const birthTime = formatBirthTime({ hour: values.timeHour, minute: values.timeMinute, meridiem: values.timeMeridiem })
-  const canGenerate = Boolean(values.date && birthTime && placeState.selectedPlace)
-
-  // Only offer a share link once there's an actual chart to point at —
-  // matches the "copy link to this chart" button's disabled state.
-  const shareUrl = (chartLoaded && canGenerate)
-    ? buildShareUrl({
-        date: values.date,
-        time: birthTime,
-        lat: placeState.selectedPlace.lat,
-        lon: placeState.selectedPlace.lon,
-        place: placeState.selectedPlace.label,
-      }, SITE_URL)
+  const parsedBirthTime = parseBirthTimeInput(values.time)
+  const birthTime = parsedBirthTime
+    ? formatBirthTime({ hour: parsedBirthTime.hour, minute: parsedBirthTime.minute, meridiem: values.timeMeridiem })
     : ''
+  const canGenerate = Boolean(values.date.trim() && birthTime && placeState.selectedPlace)
+
+  const missingFields = []
+  if (!values.date.trim()) missingFields.push('date')
+  if (!parsedBirthTime) missingFields.push('time')
+  if (!placeState.place.trim() || placeState.selectedPlace === null) missingFields.push('place')
+  const continueHint = missingFields.length ? `add ${missingFields.join(', ')} to continue` : ''
 
   const generateChart = useCallback(async ({ force = false, wheelConfigOverride, chartOptionsOverride } = {}) => {
     if (!canGenerate) return false
@@ -205,7 +238,8 @@ export default function Hero() {
       try {
         const data = await fetchPlaceOptions(query)
         if (placeState.place.trim() === query) {
-          setPlaceOptions(data.map(normalizePlaceOption))
+          const normalizedOptions = data.map(normalizePlaceOption)
+          setPlaceOptions(prioritisePlaceOptions(normalizedOptions, query))
         }
       } catch {
         setPlaceOptions([])
@@ -222,55 +256,60 @@ export default function Hero() {
     setPreviewPulseNonce((current) => current + 1)
   }, [])
 
-  const scheduleChartRefresh = useCallback((pulseGroup = 'aspects', nextWheelConfig = null, nextChartOptions = null) => {
-    if (chartDebounceRef.current) window.clearTimeout(chartDebounceRef.current)
-    chartDebounceRef.current = window.setTimeout(() => {
-      if (!chartLoaded || !canGenerate) return
-      // Skip scheduling further auto-regenerate attempts while we're in a
-      // post-429 cooldown, rather than immediately retrying into the limit again.
-      if (Date.now() < rateLimitedUntilRef.current) return
-      triggerPreviewPulse(pulseGroup)
-      generateChart({ wheelConfigOverride: nextWheelConfig || undefined, chartOptionsOverride: nextChartOptions || undefined })
-    }, CHART_REFRESH_DEBOUNCE_MS)
-  }, [canGenerate, chartLoaded, generateChart, triggerPreviewPulse])
-
-  const handleSettingsUpdate = (patch, options = {}) => {
-    let nextWheelConfig = null
-    setWheelConfig((current) => {
-      nextWheelConfig = { ...current, ...patch }
-      return nextWheelConfig
-    })
-    if (options.shouldGenerate) {
-      scheduleChartRefresh(options.pulseGroup || 'aspects', nextWheelConfig)
-    }
+  const handleSettingsUpdate = (patch) => {
+    setWheelDraftConfig((current) => ({ ...current, ...patch }))
   }
 
   const handleChartOptionsUpdate = (patch) => {
-    const next = { ...chartOptions, ...patch }
-    setChartOptions(next)
-    scheduleChartRefresh('aspects', null, next)
+    setChartDraftOptions((current) => ({ ...current, ...patch }))
   }
 
-  const handleVisualSettingsUpdate = (patch, options = {}) => {
+  const handleVisualSettingsUpdate = (patch) => {
     setVisualDraftSettings((current) => ({ ...current, ...patch }))
-    visualPatchRef.current = { ...visualPatchRef.current, ...patch }
-    visualPulseRef.current = options.pulseGroup || visualPulseRef.current || 'frame'
-
-    if (visualDebounceRef.current) window.clearTimeout(visualDebounceRef.current)
-    visualDebounceRef.current = window.setTimeout(() => {
-      const mergedPatch = visualPatchRef.current
-      visualPatchRef.current = {}
-      setVisualSettings((current) => ({ ...current, ...mergedPatch }))
-      triggerPreviewPulse(visualPulseRef.current)
-      visualPulseRef.current = 'frame'
-    }, 200)
   }
+
+  const handleApplyChanges = useCallback(async () => {
+    const wheelPatch = getChangedPatch(wheelConfig, wheelDraftConfig)
+    const chartOptionsPatch = getChangedPatch(chartOptions, chartDraftOptions)
+    const visualPatch = getChangedPatch(visualSettings, visualDraftSettings)
+
+    const hasWheelChanges = Object.keys(wheelPatch).length > 0
+    const hasChartOptionChanges = Object.keys(chartOptionsPatch).length > 0
+    const hasVisualChanges = Object.keys(visualPatch).length > 0
+
+    if (!hasWheelChanges && !hasChartOptionChanges && !hasVisualChanges) return
+
+    const nextWheelConfig = hasWheelChanges ? { ...wheelConfig, ...wheelPatch } : wheelConfig
+    const nextChartOptions = hasChartOptionChanges ? { ...chartOptions, ...chartOptionsPatch } : chartOptions
+    const nextVisualSettings = hasVisualChanges ? { ...visualSettings, ...visualPatch } : visualSettings
+    const pulseGroup = hasVisualChanges ? resolveVisualPulseGroup(visualPatch) : hasChartOptionChanges ? 'aspects' : 'frame'
+
+    if (hasWheelChanges) setWheelConfig(nextWheelConfig)
+    if (hasChartOptionChanges) setChartOptions(nextChartOptions)
+    if (hasVisualChanges) setVisualSettings(nextVisualSettings)
+
+    triggerPreviewPulse(pulseGroup)
+
+    if ((hasWheelChanges || hasChartOptionChanges) && chartLoaded && canGenerate) {
+      await generateChart({ force: true, wheelConfigOverride: nextWheelConfig, chartOptionsOverride: nextChartOptions })
+    }
+  }, [
+    wheelConfig,
+    wheelDraftConfig,
+    chartOptions,
+    chartDraftOptions,
+    visualSettings,
+    visualDraftSettings,
+    triggerPreviewPulse,
+    chartLoaded,
+    canGenerate,
+    generateChart,
+  ])
 
   useEffect(() => () => {
-    if (visualDebounceRef.current) window.clearTimeout(visualDebounceRef.current)
-    if (chartDebounceRef.current) window.clearTimeout(chartDebounceRef.current)
     if (stageTimerRef.current) window.clearTimeout(stageTimerRef.current)
     if (resetTimerRef.current) window.clearTimeout(resetTimerRef.current)
+    if (submitLoadingTimerRef.current) window.clearTimeout(submitLoadingTimerRef.current)
   }, [])
 
   // WP-3.3 share loop, step 1: on first mount only, look for a share link's
@@ -290,7 +329,7 @@ export default function Hero() {
     if (!split) return
 
     track('chart_link_opened')
-    setValues({ date: parsed.date, timeHour: split.hour, timeMinute: split.minute, timeMeridiem: split.meridiem })
+    setValues({ date: parsed.date, time: `${split.hour.padStart(2, '0')}:${split.minute}`, timeMeridiem: split.meridiem })
     dispatchPlace({ type: 'SELECT', option: { label: parsed.place, lat: parsed.lat, lon: parsed.lon } })
     setPendingShareGenerate(true)
   }, [])
@@ -327,28 +366,18 @@ export default function Hero() {
     requestSeq.current += 1
     rateLimitedUntilRef.current = 0
 
-    if (visualDebounceRef.current) {
-      window.clearTimeout(visualDebounceRef.current)
-      visualDebounceRef.current = null
-    }
-
-    if (chartDebounceRef.current) {
-      window.clearTimeout(chartDebounceRef.current)
-      chartDebounceRef.current = null
-    }
-
     if (stageTimerRef.current) {
       window.clearTimeout(stageTimerRef.current)
       stageTimerRef.current = null
     }
 
-    visualPatchRef.current = {}
-    visualPulseRef.current = 'frame'
     setErrors({})
     setPlaceOptions([])
     setPlacesLoading(false)
     setWheelConfig(buildDefaultWheelConfig())
+    setWheelDraftConfig(buildDefaultWheelConfig())
     setChartOptions(DEFAULT_CHART_OPTIONS)
+    setChartDraftOptions(DEFAULT_CHART_OPTIONS)
     setChartSvg('')
     setChartData(null)
     setChartError('')
@@ -359,9 +388,15 @@ export default function Hero() {
     setPreviewPulseNonce(0)
     setVisualDraftSettings(DEFAULT_VISUAL_SETTINGS)
     setVisualSettings(DEFAULT_VISUAL_SETTINGS)
+    setSubmitLoading(false)
+
+    if (submitLoadingTimerRef.current) {
+      window.clearTimeout(submitLoadingTimerRef.current)
+      submitLoadingTimerRef.current = null
+    }
 
     if (!preserveValues) {
-      setValues({ date: '', timeHour: '', timeMinute: '', timeMeridiem: DEFAULT_MERIDIEM })
+      setValues({ date: '', time: '', timeMeridiem: DEFAULT_MERIDIEM })
       dispatchPlace({ type: 'RESET' })
     }
   }, [])
@@ -387,31 +422,47 @@ export default function Hero() {
     if (!valid) {
       const firstBad = !values.date.trim()
         ? dateRef
-        : !values.timeHour.trim()
-          ? timeHourRef
-          : !values.timeMinute.trim()
-            ? timeMinuteRef
+        : !values.time.trim()
+          ? timeRef
+          : !parseBirthTimeInput(values.time)
+            ? timeRef
             : !values.timeMeridiem.trim()
               ? timeMeridiemRef
-              : !formatBirthTime({ hour: values.timeHour, minute: values.timeMinute, meridiem: values.timeMeridiem })
-                ? timeHourRef
-                : !placeState.place.trim() || placeState.selectedPlace === null
+              : !placeState.place.trim() || placeState.selectedPlace === null
                   ? placeRef
-                  : timeHourRef
+                  : timeRef
       firstBad.current?.focus()
       return
     }
 
-    const success = await generateChart({ force: true })
+    setSubmitLoading(true)
+    setResultEntered(false)
+    setViewMode('generating')
+
+    if (submitLoadingTimerRef.current) {
+      window.clearTimeout(submitLoadingTimerRef.current)
+      submitLoadingTimerRef.current = null
+    }
+
+    const loadingDelay = new Promise((resolve) => {
+      submitLoadingTimerRef.current = window.setTimeout(() => {
+        submitLoadingTimerRef.current = null
+        resolve()
+      }, SUBMIT_LOADING_MS)
+    })
+
+    const [success] = await Promise.all([
+      generateChart({ force: true }),
+      loadingDelay,
+    ])
+
+    setSubmitLoading(false)
+
     if (success) {
-      setResultEntered(false)
-      setViewMode('generating')
-      if (stageTimerRef.current) window.clearTimeout(stageTimerRef.current)
-      stageTimerRef.current = window.setTimeout(() => {
-        setViewMode('result')
-        setResultEntered(true)
-        stageTimerRef.current = null
-      }, STAGE_TRANSITION_MS)
+      setViewMode('result')
+      setResultEntered(true)
+    } else {
+      setViewMode('input')
     }
   }
 
@@ -447,106 +498,113 @@ export default function Hero() {
     </div>
   )
 
-  const renderInputForm = (className = '') => (
+  const renderInputForm = (className = '') => {
+    return (
       <form className={`gen${className ? ` ${className}` : ''}`} id="chart-form" tabIndex={-1} ref={genRef} onPointerMove={onGenMove} onSubmit={handleContinue} noValidate>
-        <div className="gen-head">
-          <span className="t">generate your birth chart</span>
-          <span className="free mono">free, no account needed ~</span>
-        </div>
-
-        <div className="birth-inputs">
-          <div>
-            <label htmlFor="g-date">date of birth</label>
-            <input id="g-date" name="birth-date" type="date" autoComplete="bday"
-              required ref={dateRef} value={values.date} onChange={setField('date')}
-              aria-invalid={errors.date ? 'true' : undefined}
-              aria-describedby={errors.date ? 'g-date-err' : undefined} />
-            {errors.date && <p className="field-err mono" id="g-date-err">{errors.date}</p>}
+        {submitLoading ? (
+          <div className="gen-loading" aria-live="polite" role="status">
+            <div className="gen-spinner" aria-hidden="true"></div>
+            <span className="mono">casting your chart...</span>
           </div>
-          <div className="birth-time-field">
-            <div className="time-group-label">time of birth</div>
-            <div className="time-inputs" aria-describedby={errors.time ? 'g-time-err' : undefined}>
-              <label className="time-field" htmlFor="g-time-hour">
-                <span className="time-sub-label">hour</span>
-                <input
-                  id="g-time-hour"
-                  name="birth-time-hour"
-                  type="number"
-                  min="1"
-                  max="12"
-                  inputMode="numeric"
-                  required
-                  ref={timeHourRef}
-                  value={values.timeHour}
-                  onChange={setField('timeHour')}
-                  aria-invalid={errors.time ? 'true' : undefined}
-                />
-              </label>
-              <label className="time-field" htmlFor="g-time-minute">
-                <span className="time-sub-label">minute</span>
-                <input
-                  id="g-time-minute"
-                  name="birth-time-minute"
-                  type="number"
-                  min="0"
-                  max="59"
-                  inputMode="numeric"
-                  required
-                  ref={timeMinuteRef}
-                  value={values.timeMinute}
-                  onChange={setField('timeMinute')}
-                  aria-invalid={errors.time ? 'true' : undefined}
-                />
-              </label>
-              <label className="time-field" htmlFor="g-time-meridiem">
-                <span className="time-sub-label">am/pm</span>
-                <select
-                  id="g-time-meridiem"
-                  name="birth-time-meridiem"
-                  required
-                  ref={timeMeridiemRef}
-                  value={values.timeMeridiem}
-                  onChange={setField('timeMeridiem')}
-                  aria-invalid={errors.time ? 'true' : undefined}
-                >
-                  <option value="AM">AM</option>
-                  <option value="PM">PM</option>
-                </select>
-              </label>
+        ) : (
+          <>
+            <div className="gen-head">
+              <span className="t">generate your birth chart</span>
+              <span className="free mono">free, no account needed ~</span>
             </div>
-            {errors.time && <p className="field-err mono" id="g-time-err">{errors.time}</p>}
-          </div>
-          <div>
-            <label htmlFor="g-place">place of birth</label>
-            <PlaceCombobox
-              id="g-place"
-              inputRef={placeRef}
-              value={placeState.place}
-              onValueChange={handlePlaceTextChange}
-              options={placeOptions}
-              loading={placesLoading}
-              selected={placeState.selectedPlace}
-              onSelect={handlePlaceSelect}
-              placeholder="city, country"
-              autoComplete="address-level2"
-              invalid={Boolean(errors.place)}
-              describedBy={errors.place ? 'g-place-err' : 'g-place-hint'}
-            />
-            {errors.place && <p className="field-err mono" id="g-place-err">{errors.place}</p>}
-            {!errors.place && placeState.place && placeState.selectedPlace === null && (
-              <p className="field-err mono" id="g-place-hint">select one of the suggested places</p>
-            )}
-          </div>
-          <div className="continue-action">
-            <button type="submit" className="btn-ghost" disabled={!canGenerate || chartLoading}>
-              {chartLoading ? 'generating…' : 'continue'}
-            </button>
-          </div>
-        </div>
+
+            <div className="birth-inputs">
+              <div>
+                <label htmlFor="g-date">date of birth</label>
+                <input
+                  id="g-date"
+                  name="birth-date"
+                  type="date"
+                  autoComplete="bday"
+                  required
+                  ref={dateRef}
+                  value={values.date}
+                  onChange={setField('date')}
+                  aria-invalid={errors.date ? 'true' : undefined}
+                  aria-describedby={errors.date ? 'g-date-err' : undefined}
+                />
+                {errors.date && <p className="field-err mono" id="g-date-err">{errors.date}</p>}
+              </div>
+
+              <div className="birth-time-field">
+                <div className="time-group-label">time of birth</div>
+                <div className="time-inputs" aria-describedby={errors.time ? 'g-time-err' : undefined}>
+                  <label className="time-field time-field-time" htmlFor="g-time">
+                    <span className="time-sub-label">time of birth</span>
+                    <input
+                      id="g-time"
+                      name="birth-time"
+                      type="text"
+                      inputMode="numeric"
+                      pattern={"\\d{1,2}:\\d{2}"}
+                      placeholder="HH:MM"
+                      required
+                      ref={timeRef}
+                      value={values.time}
+                      onChange={setField('time')}
+                      aria-invalid={errors.time ? 'true' : undefined}
+                    />
+                  </label>
+                  <label className="time-field" htmlFor="g-time-meridiem">
+                    <span className="time-sub-label">am/pm</span>
+                    <select
+                      id="g-time-meridiem"
+                      name="birth-time-meridiem"
+                      required
+                      ref={timeMeridiemRef}
+                      value={values.timeMeridiem}
+                      onChange={setField('timeMeridiem')}
+                      aria-invalid={errors.time ? 'true' : undefined}
+                    >
+                      <option value="AM">AM</option>
+                      <option value="PM">PM</option>
+                    </select>
+                  </label>
+                </div>
+                {errors.time && <p className="field-err mono" id="g-time-err">{errors.time}</p>}
+              </div>
+
+              <div>
+                <label htmlFor="g-place">place of birth</label>
+                <PlaceCombobox
+                  id="g-place"
+                  inputRef={placeRef}
+                  value={placeState.place}
+                  onValueChange={handlePlaceTextChange}
+                  options={placeOptions}
+                  loading={placesLoading}
+                  selected={placeState.selectedPlace}
+                  onSelect={handlePlaceSelect}
+                  placeholder="city, country"
+                  autoComplete="off"
+                  invalid={Boolean(errors.place)}
+                  describedBy={errors.place ? 'g-place-err' : 'g-place-hint'}
+                />
+                {errors.place && <p className="field-err mono" id="g-place-err">{errors.place}</p>}
+                {!errors.place && placeState.place && placeState.selectedPlace === null && (
+                  <p className="field-err mono" id="g-place-hint">select one of the suggested places</p>
+                )}
+              </div>
+
+              <div className="continue-action">
+                <button type="submit" className="btn-ghost" data-submit-btn disabled={!canGenerate || chartLoading || submitLoading}>
+                  {chartLoading ? 'generating…' : 'continue'}
+                </button>
+                <span className="form-hint mono" data-form-hint>{continueHint}</span>
+              </div>
+            </div>
+          </>
+        )}
 
         {chartError && <div className="gen-alert mono">{chartError}</div>}
       </form>
-  )
+    )
+  }
 
   const outputClassName = `chart-output theme-${visualSettings.theme} bg-${visualSettings.background} ${visualSettings.show_placements ? 'show-placements' : 'hide-placements'} ${visualSettings.show_aspects ? 'show-aspects' : 'hide-aspects'}`
   const outputStyle = {
@@ -554,6 +612,9 @@ export default function Hero() {
     '--chart-glyph-size': visualSettings.glyph_size,
     '--chart-font-size': visualSettings.font_size,
   }
+  const hasPendingCustomiseChanges = hasObjectChanges(wheelConfig, wheelDraftConfig)
+    || hasObjectChanges(chartOptions, chartDraftOptions)
+    || hasObjectChanges(visualSettings, visualDraftSettings)
 
   return (
     <section
@@ -584,7 +645,6 @@ export default function Hero() {
               onReturnToInput={handleReturnToInput}
               onCloseCustomise={handleCloseCustomise}
               onExport={handleExportChart}
-              shareUrl={shareUrl}
               isCustomiseOpen={viewMode === 'customising'}
               panelRef={genRef}
               outputClassName={outputClassName}
@@ -597,12 +657,14 @@ export default function Hero() {
             />
             <div className={`customise-drop${viewMode === 'customising' ? ' is-open' : ''}`}>
             <CustomisePanel
-              settings={wheelConfig}
+              settings={wheelDraftConfig}
               visualSettings={visualDraftSettings}
-              chartOptions={chartOptions}
+              chartOptions={chartDraftOptions}
+              hasPendingChanges={hasPendingCustomiseChanges}
               onUpdateSettings={handleSettingsUpdate}
               onUpdateVisualSettings={handleVisualSettingsUpdate}
               onUpdateChartOptions={handleChartOptionsUpdate}
+              onApplyChanges={handleApplyChanges}
               onClose={handleCloseCustomise}
               onReturnToInput={handleReturnToInput}
             />

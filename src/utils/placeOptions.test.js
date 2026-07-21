@@ -4,6 +4,7 @@ import {
   nextComboboxIndex,
   normalizePlaceOption,
   placeSelectionReducer,
+  prioritisePlaceOptions,
 } from './placeOptions.js'
 
 describe('normalizePlaceOption', () => {
@@ -90,5 +91,44 @@ describe('nextComboboxIndex', () => {
   it('steps forward and backward within bounds', () => {
     expect(nextComboboxIndex(0, 3, 1)).toBe(1)
     expect(nextComboboxIndex(1, 3, -1)).toBe(0)
+  })
+})
+
+describe('prioritisePlaceOptions', () => {
+  const londonSet = [
+    { label: 'London, England, GB', lat: 51.5072, lon: -0.1276 },
+    { label: 'London, Ontario, CA', lat: 42.9849, lon: -81.2453 },
+    { label: 'Londonderry, Northern Ireland, GB', lat: 54.997, lon: -7.309 },
+    { label: 'East London, South Africa, ZA', lat: -33.0153, lon: 27.9116 },
+  ]
+
+  it('prioritises London city matches before other prefix matches', () => {
+    const sorted = prioritisePlaceOptions(londonSet, 'London')
+    expect(sorted.map((option) => option.label)).toEqual([
+      'London, England, GB',
+      'London, Ontario, CA',
+      'Londonderry, Northern Ireland, GB',
+      'East London, South Africa, ZA',
+    ])
+  })
+
+  it('uses the city part of a comma-delimited query', () => {
+    const sorted = prioritisePlaceOptions(londonSet, 'London, UK')
+    expect(sorted[0].label).toBe('London, England, GB')
+  })
+
+  it('does not reorder short 3-character queries', () => {
+    const sorted = prioritisePlaceOptions(londonSet, 'Par')
+    expect(sorted).toEqual(londonSet)
+  })
+
+  it('does not reorder empty queries', () => {
+    const sorted = prioritisePlaceOptions(londonSet, '   ')
+    expect(sorted).toEqual(londonSet)
+  })
+
+  it('prioritises a full city query over other partial matches', () => {
+    const sorted = prioritisePlaceOptions(londonSet, 'Londonderry')
+    expect(sorted[0].label).toBe('Londonderry, Northern Ireland, GB')
   })
 })

@@ -1,39 +1,4 @@
-import { useEffect, useState } from 'react'
-
-function SliderField({ label, min, max, step, value, unit = '', onChange, onRelease }) {
-  const percent = max === min ? 0 : ((value - min) / (max - min)) * 100
-  const displayValue = Number.isInteger(step) ? Number(value).toString() : Number(value).toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1')
-
-  return (
-    <div className="ruled-slider">
-      <div className="slider-header">
-        <span className="slider-label">{label}</span>
-        <span className="slider-value">{displayValue}{unit}</span>
-      </div>
-      <div className="rule-track">
-        <div className="rule-fill" style={{ width: `${percent}%` }} />
-      </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        onMouseUp={() => onRelease?.(value)}
-        onTouchEnd={() => onRelease?.(value)}
-        onKeyUp={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') onRelease?.(value)
-        }}
-        className="range-input"
-      />
-      <div className="rule-labels">
-        <span>{min}{unit}</span>
-        <span>{max}{unit}</span>
-      </div>
-    </div>
-  )
-}
+import { useEffect, useRef, useState } from 'react'
 
 const tabs = [
   { id: 'style', label: 'Style' },
@@ -47,7 +12,7 @@ const THEME_OPTIONS = [
 
 const BACKGROUND_OPTIONS = [
   { id: 'light', label: 'Light' },
-  { id: 'transparent', label: 'Transparent' },
+  { id: 'white', label: 'White' },
 ]
 
 const PALETTE_FIELDS = [
@@ -61,35 +26,59 @@ const PALETTE_FIELDS = [
   ['aspect_conj', 'Conjunction'],
 ]
 
-export default function CustomisePanel({ settings, visualSettings, chartOptions, onUpdateSettings, onUpdateVisualSettings, onUpdateChartOptions, onClose, onReturnToInput }) {
+export default function CustomisePanel({
+  settings,
+  visualSettings,
+  chartOptions,
+  hasPendingChanges = false,
+  onUpdateSettings,
+  onUpdateVisualSettings,
+  onUpdateChartOptions,
+  onApplyChanges,
+  onClose,
+  onReturnToInput,
+}) {
   const [activeTab, setActiveTab] = useState('style')
-  const [maxOrbDraft, setMaxOrbDraft] = useState(settings.max_orb)
-  const [minFootprintDraft, setMinFootprintDraft] = useState(settings.min_footprint)
-  // ponytail: draft holds in-picker values; ?? falls back to committed settings,
-  // so no sync effect is needed
-  const [paletteDraft, setPaletteDraft] = useState({})
-  const paletteValue = (key) => paletteDraft[key] ?? settings[key]
+  const [isApplying, setIsApplying] = useState(false)
+  const applyTimerRef = useRef(null)
 
-  useEffect(() => {
-    setMaxOrbDraft(settings.max_orb)
-  }, [settings.max_orb])
+  useEffect(() => () => {
+    if (applyTimerRef.current) {
+      window.clearTimeout(applyTimerRef.current)
+      applyTimerRef.current = null
+    }
+  }, [])
 
-  useEffect(() => {
-    setMinFootprintDraft(settings.min_footprint)
-  }, [settings.min_footprint])
-
-  const updateSetting = (key, value, options = {}) => {
-    onUpdateSettings({ [key]: value }, options)
+  const updateSetting = (key, value) => {
+    onUpdateSettings({ [key]: value })
   }
 
-  const updateVisual = (patch, options = {}) => {
-    onUpdateVisualSettings(patch, options)
+  const updateVisual = (patch) => {
+    onUpdateVisualSettings(patch)
+  }
+
+  const handleApplyChanges = async () => {
+    if (isApplying) return
+
+    setIsApplying(true)
+    await new Promise((resolve) => {
+      applyTimerRef.current = window.setTimeout(() => {
+        applyTimerRef.current = null
+        resolve()
+      }, 2000)
+    })
+
+    await onApplyChanges?.()
+    setIsApplying(false)
   }
 
   return (
     <div className="customise-panel" id="chart-customise-panel" role="dialog" aria-label="Chart customisation panel" aria-modal="false">
       <div className="customise-panel-head">
-        <p className="t">customise</p>
+        <div className="customise-panel-title">
+          <p className="t">customise</p>
+          {hasPendingChanges && <span className="customise-pending-dot" aria-label="Unapplied changes" />}
+        </div>
         <div className="customise-panel-actions">
           <button type="button" className="customise-secondary" onClick={onReturnToInput}>
             edit birth details
@@ -100,7 +89,9 @@ export default function CustomisePanel({ settings, visualSettings, chartOptions,
           </button>
         </div>
       </div>
+
       <button type="button" className="sheet-handle" aria-hidden="true" tabIndex={-1} onClick={onClose} />
+
       <div className="customise-scroll">
         <div className="customise-tabs" role="tablist" aria-label="Customisation sections">
           {tabs.map((tab) => (
@@ -135,7 +126,7 @@ export default function CustomisePanel({ settings, visualSettings, chartOptions,
                       role="radio"
                       aria-checked={selected}
                       className={`theme-card${selected ? ' is-selected' : ''}`}
-                      onClick={() => updateVisual({ theme: option.id }, { pulseGroup: 'surface' })}
+                      onClick={() => updateVisual({ theme: option.id })}
                     >
                       <span className={`theme-swatch ${option.swatchClass}`} aria-hidden="true" />
                       <span className="theme-card-label">{option.label}</span>
@@ -157,7 +148,7 @@ export default function CustomisePanel({ settings, visualSettings, chartOptions,
                       role="radio"
                       aria-checked={selected}
                       className={`segment-btn${selected ? ' is-selected' : ''}`}
-                      onClick={() => updateVisual({ background: option.id }, { pulseGroup: 'surface' })}
+                      onClick={() => updateVisual({ background: option.id })}
                     >
                       {option.label}
                     </button>
@@ -173,9 +164,8 @@ export default function CustomisePanel({ settings, visualSettings, chartOptions,
                   <label key={key} className="palette-field">
                     <input
                       type="color"
-                      value={paletteValue(key)}
-                      onChange={(e) => setPaletteDraft((d) => ({ ...d, [key]: e.target.value }))}
-                      onBlur={() => updateSetting(key, paletteValue(key), { shouldGenerate: true, pulseGroup: 'surface' })}
+                      value={settings[key]}
+                      onChange={(e) => updateSetting(key, e.target.value)}
                     />
                     <span>{label}</span>
                   </label>
@@ -193,7 +183,7 @@ export default function CustomisePanel({ settings, visualSettings, chartOptions,
                 <input
                   type="checkbox"
                   checked={visualSettings.show_placements}
-                  onChange={(e) => updateVisual({ show_placements: e.target.checked }, { pulseGroup: 'placements' })}
+                  onChange={(e) => updateVisual({ show_placements: e.target.checked })}
                 />
                 <span className="circle-indicator" />
                 <span className="toggle-label">Show planet placements</span>
@@ -202,7 +192,7 @@ export default function CustomisePanel({ settings, visualSettings, chartOptions,
                 <input
                   type="checkbox"
                   checked={visualSettings.show_aspects}
-                  onChange={(e) => updateVisual({ show_aspects: e.target.checked }, { pulseGroup: 'aspects' })}
+                  onChange={(e) => updateVisual({ show_aspects: e.target.checked })}
                 />
                 <span className="circle-indicator" />
                 <span className="toggle-label">Show aspect lines</span>
@@ -220,7 +210,7 @@ export default function CustomisePanel({ settings, visualSettings, chartOptions,
                 <input
                   type="checkbox"
                   checked={settings.show_decans}
-                  onChange={(e) => updateSetting('show_decans', e.target.checked, { shouldGenerate: true, pulseGroup: 'frame' })}
+                  onChange={(e) => updateSetting('show_decans', e.target.checked)}
                 />
                 <span className="circle-indicator" />
                 <span className="toggle-label">Decan ring</span>
@@ -243,59 +233,18 @@ export default function CustomisePanel({ settings, visualSettings, chartOptions,
                 ))}
               </div>
             </div>
-
-            <SliderField
-              label="Max Orb"
-              min={0}
-              max={12}
-              step={0.5}
-              value={maxOrbDraft}
-              onChange={(value) => {
-                setMaxOrbDraft(value)
-                updateSetting('max_orb', value, { shouldGenerate: true, pulseGroup: 'aspects' })
-              }}
-              onRelease={(value) => updateSetting('max_orb', value, { shouldGenerate: true, pulseGroup: 'aspects' })}
-            />
-            <SliderField
-              label="Min Footprint"
-              min={0}
-              max={5}
-              step={0.5}
-              value={minFootprintDraft}
-              onChange={(value) => {
-                setMinFootprintDraft(value)
-                updateSetting('min_footprint', value, { shouldGenerate: true, pulseGroup: 'aspects' })
-              }}
-              onRelease={(value) => updateSetting('min_footprint', value, { shouldGenerate: true, pulseGroup: 'aspects' })}
-            />
-
-            <SliderField
-              label="Line Width"
-              min={0.5}
-              max={3}
-              step={0.25}
-              value={visualSettings.line_width}
-              onChange={(value) => updateVisual({ line_width: value }, { pulseGroup: 'lines' })}
-            />
-            <SliderField
-              label="Glyph Size"
-              min={8}
-              max={24}
-              step={1}
-              value={visualSettings.glyph_size}
-              onChange={(value) => updateVisual({ glyph_size: value }, { pulseGroup: 'glyphs' })}
-            />
-            <SliderField
-              label="Font Size"
-              min={8}
-              max={16}
-              step={1}
-              value={visualSettings.font_size}
-              onChange={(value) => updateVisual({ font_size: value }, { pulseGroup: 'text' })}
-            />
-
           </div>
         </div>
+
+        <button
+          className="btn-apply"
+          type="button"
+          onClick={handleApplyChanges}
+          disabled={isApplying || !hasPendingChanges}
+          aria-busy={isApplying}
+        >
+          {isApplying ? 'applying…' : 'apply changes'}
+        </button>
       </div>
     </div>
   )

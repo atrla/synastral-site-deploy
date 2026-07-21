@@ -104,3 +104,7 @@ h2 .lite{color:var(--sky-text)}
   .datastrip{justify-content:center;text-align:center}
   .datastrip .ds-hide{display:none}
 }
+
+@media(max-width:48em){
+  .datastrip{display:none}
+}

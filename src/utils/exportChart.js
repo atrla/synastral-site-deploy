@@ -1,6 +1,6 @@
 // WP-1.5: export fidelity engine.
 //
-// Product intent: the free download is deliberately screen-grade 1x PNG
+// Product intent: the free download is deliberately screen-grade 2x PNG
 // only — the gallery-grade Etsy poster is the print product. Do not add
 // resolution or format options here.
 
@@ -8,6 +8,8 @@ const HAMBURG_FONT_URL = `${import.meta.env.BASE_URL}assets/HamburgSymbols.ttf`
 const HAMBURG_FONT_FAMILY = 'HamburgSymbols'
 
 const LIGHT_BACKGROUND = '#f8f4e9'
+const WHITE_BACKGROUND = '#ffffff'
+const EXPORT_SCALE = 2
 
 const ATTRIBUTION_TEXT = 'synastral.com'
 const ATTRIBUTION_FONT_STACK = 'ui-monospace, SFMono-Regular, "DM Mono", Menlo, Consolas, monospace'
@@ -33,7 +35,7 @@ export function pruneHiddenGroups(svgNode, visualSettings = {}) {
     svgNode.querySelectorAll('.planets-group').forEach((node) => node.remove())
   }
   if (!visualSettings.show_aspects) {
-    svgNode.querySelectorAll('.aspects-group').forEach((node) => node.remove())
+    svgNode.querySelectorAll('.aspect-line, .aspect-mark').forEach((node) => node.remove())
   }
 
   return svgNode
@@ -123,28 +125,30 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`
 }
 
-/** Pure: the extended canvas size, with a ~4% bottom band for attribution. */
+/** Pure: the scaled export canvas size, with a ~4% bottom band for attribution. */
 export function computeExportDimensions(baseWidth, baseHeight) {
-  const width = Math.max(1, Math.round(baseWidth))
-  const chartHeight = Math.max(1, Math.round(baseHeight))
+  const width = Math.max(1, Math.round(baseWidth * EXPORT_SCALE))
+  const chartHeight = Math.max(1, Math.round(baseHeight * EXPORT_SCALE))
   const bandHeight = Math.max(1, Math.round(chartHeight * ATTRIBUTION_BAND_RATIO))
   return { width, chartHeight, bandHeight, height: chartHeight + bandHeight }
 }
 
 /** Pure: the attribution text's drawing style, derived from the wheel's ink colour. */
-export function getAttributionStyle(wheelConfig = {}) {
+export function getAttributionStyle(wheelConfig = {}, forceMonochrome = false) {
   return {
     text: ATTRIBUTION_TEXT,
     fontFamily: ATTRIBUTION_FONT_STACK,
     fontSize: ATTRIBUTION_FONT_SIZE,
-    color: hexToRgba(wheelConfig.ink, ATTRIBUTION_ALPHA),
+    color: forceMonochrome
+      ? `rgba(0, 0, 0, ${ATTRIBUTION_ALPHA})`
+      : hexToRgba(wheelConfig.ink, ATTRIBUTION_ALPHA),
   }
 }
 
 /** Draws the "synastral.com" attribution centred in the bottom band. Never shown in the on-page preview. */
-export function drawAttribution(ctx, dimensions, wheelConfig) {
+export function drawAttribution(ctx, dimensions, wheelConfig, forceMonochrome = false) {
   const { width, height, bandHeight } = dimensions
-  const style = getAttributionStyle(wheelConfig)
+  const style = getAttributionStyle(wheelConfig, forceMonochrome)
 
   ctx.fillStyle = style.color
   ctx.font = `${style.fontSize}px ${style.fontFamily}`
@@ -167,7 +171,7 @@ function downloadPngBlob(blob, fileStem) {
 
 /**
  * Renders the current chart SVG (with wrapper-CSS fidelity restored) to a
- * 1x screen-grade PNG and triggers a download. Free-tier export only —
+ * 2x screen-grade PNG and triggers a download. Free-tier export only —
  * no resolution/format switches by design.
  */
 export async function exportChart({ svgElement, visualSettings, wheelConfig, fileStem }) {
@@ -207,19 +211,25 @@ export async function exportChart({ svgElement, visualSettings, wheelConfig, fil
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    const isBw = visualSettings.theme === 'bw'
     const isLight = visualSettings.background === 'light'
-    if (isLight) {
+    const isWhite = visualSettings.background === 'white'
+
+    if (isBw || isWhite) {
+      ctx.fillStyle = WHITE_BACKGROUND
+      ctx.fillRect(0, 0, dimensions.width, dimensions.height)
+    } else if (isLight) {
       ctx.fillStyle = LIGHT_BACKGROUND
       ctx.fillRect(0, 0, dimensions.width, dimensions.height)
     }
 
-    if (visualSettings.theme === 'bw') {
+    if (isBw) {
       ctx.filter = 'grayscale(1)'
     }
     ctx.drawImage(image, 0, 0, dimensions.width, dimensions.chartHeight)
     ctx.filter = 'none'
 
-    drawAttribution(ctx, dimensions, wheelConfig)
+    drawAttribution(ctx, dimensions, wheelConfig, isBw)
 
     const pngBlob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
     if (pngBlob) downloadPngBlob(pngBlob, fileStem)

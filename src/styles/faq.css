@@ -3,18 +3,22 @@
 .faq-list{margin-top:1.5rem;border:1px dashed var(--sky);background:rgba(255,255,255,.45);backdrop-filter:blur(8px)}
 .faq-list details{border-bottom:1px dashed rgba(10,51,35,.24)}
 .faq-list details:last-child{border-bottom:none}
-.faq-list summary{position:relative;list-style:none;cursor:pointer;padding:1rem 1.25rem 1rem 2.875rem;
-  font-size:.75rem;letter-spacing:.12em;text-transform:lowercase;color:var(--cobalt)}
+.faq-list summary{position:relative;display:flex;justify-content:space-between;align-items:baseline;list-style:none;
+  cursor:pointer;padding:1rem 1.25rem 1rem 2.875rem;font-size:.75rem;letter-spacing:.12em;text-transform:lowercase;
+  color:var(--cobalt)}
 .faq-list summary::-webkit-details-marker{display:none}
 .faq-list summary::before{content:'✳';position:absolute;left:1.25rem;top:50%;transform:translateY(-50%);
   color:var(--sky-ink);font-size:.75rem;transition:transform .22s ease,color .22s ease}
 .faq-list details[open] summary::before{transform:translateY(-50%) rotate(45deg);color:var(--cobalt)}
-.faq-list details > div{display:grid;grid-template-rows:0fr;transition:grid-template-rows .24s ease}
-.faq-list details[open] > div{grid-template-rows:1fr}
-.faq-list details > div > p{overflow:hidden;padding:0 1.25rem 1rem 2.875rem;color:#3E4B36;line-height:1.65;font-size:1rem}
+.faq-list summary::after{content:'+';margin-left:1rem;flex-shrink:0;color:var(--sky-ink);font-family:inherit;transition:color .22s ease,transform .22s ease}
+.faq-list details[open] summary::after{content:'−';color:var(--cobalt)}
+.faq-list details > .details-content{overflow:hidden;transition:height .25s ease,opacity .2s ease;opacity:1}
+.faq-list details > .details-content > p{padding:0 1.25rem 1rem 2.875rem;color:#3E4B36;line-height:1.65;font-size:1rem}
+.faq-list details.is-closing > .details-content{display:block}
 .faq-list a{color:var(--cobalt);text-decoration:underline;text-underline-offset:.2rem}
 
 @media(prefers-reduced-motion:reduce){
   .faq-list summary::before,
-  .faq-list details > div{transition:none}
+  .faq-list summary::after,
+  .faq-list details > .details-content{transition:none}
 }

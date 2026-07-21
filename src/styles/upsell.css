@@ -1,21 +1,19 @@
 /* ---------- print upsell strip ---------- */
-.upsell{margin:1rem 0 0;border:1px dashed var(--cobalt);position:relative;
-  display:grid;grid-template-columns:minmax(0,1fr);align-items:center;gap:1rem 1.625rem;
-  padding:clamp(1.25rem,3vw,1.875rem) clamp(1.25rem,4vw,2.25rem);background:
-    linear-gradient(120deg,rgba(158,160,222,.25),rgba(255,255,255,.5) 45%,rgba(183,224,234,.3));
+.upsell{margin:1.25rem auto 0;max-width:40rem;border:1px dashed var(--cobalt);
+  display:flex;flex-direction:column;align-items:flex-start;gap:.75rem;
+  padding:1rem 1.25rem;background:
+    linear-gradient(120deg,rgba(158,160,222,.22),rgba(255,255,255,.5) 48%,rgba(183,224,234,.28));
   backdrop-filter:blur(10px);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.8),inset 0 -12px 22px -16px rgba(138,148,200,.3)}
-.upsell .mlabel{position:absolute;top:-.5625rem;left:1.5rem;font-size:.75rem;letter-spacing:.16em;
-  background:var(--paper);padding:0 .625rem;color:var(--sky-ink);text-transform:uppercase}
-.upsell h3{font-size:clamp(1.25rem,2.6vw,1.875rem);font-weight:400;letter-spacing:-.02em;color:var(--cobalt)}
-.upsell h3 b{font-weight:700}
-.upsell p{font-size:.9375rem;color:#5A6547;margin-top:.375rem;max-width:34em;line-height:1.6}
-.upsell-actions{display:grid;gap:.75rem;justify-items:start}
-.upsell-link{font-family:"DM Mono",monospace;font-size:.8125rem;line-height:1.5;color:var(--cobalt);text-decoration:none}
+.upsell .kicker{margin:0}
+.upsell-title{margin:0;font-size:clamp(1.25rem,2.6vw,1.875rem);font-weight:400;letter-spacing:-.02em;color:var(--cobalt)}
+.upsell-download{margin:0;font-size:.875rem;line-height:1.6;color:var(--sky-text)}
+.upsell .btn{margin-top:.25rem}
+.upsell-link{font-family:"DM Mono",monospace;font-size:.75rem;line-height:1.5;color:var(--cobalt);text-decoration:none;opacity:.85}
 .upsell-link:hover{text-decoration:underline;text-underline-offset:.25rem}
 
 @media(min-width:64em){
-  .upsell{grid-template-columns:minmax(0,1fr) auto}
+  .upsell{padding:1.375rem 1.75rem}
 }
 
 @media(prefers-reduced-motion:reduce){

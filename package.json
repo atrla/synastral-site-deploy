@@ -29,7 +29,7 @@
     "jsdom": "^26.1.0",
     "sharp": "^0.35.3",
     "vite": "^8.1.4",
-    "vite-plugin-compression": "^0.5.1",
+    "vite-plugin-compression2": "^2.5.3",
     "vitest": "^3.2.4"
   }
 }
