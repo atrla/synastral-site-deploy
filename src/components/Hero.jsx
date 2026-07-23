@@ -615,6 +615,7 @@ export default function Hero() {
   const hasPendingCustomiseChanges = hasObjectChanges(wheelConfig, wheelDraftConfig)
     || hasObjectChanges(chartOptions, chartDraftOptions)
     || hasObjectChanges(visualSettings, visualDraftSettings)
+  const isCustomising = viewMode === 'customising'
 
   return (
     <section
@@ -628,46 +629,60 @@ export default function Hero() {
         <Dither />
       </div>
       <div className="hero-left">
-        {(viewMode === 'input' || viewMode === 'generating') && (
-          <div className={viewMode === 'generating' ? 'stage-leaving-left' : ''}>
+        {viewMode === 'input' && (
+          <div>
             {renderHeroCopy()}
+          </div>
+        )}
+
+        {viewMode === 'generating' && (
+          <div className="stage-two-left chart-casting-left" aria-live="polite" role="status">
+            <div className="chart-casting-card">
+              <div className="gen-spinner" aria-hidden="true"></div>
+              <p className="mono">casting your chart...</p>
+            </div>
           </div>
         )}
 
         {(viewMode === 'result' || viewMode === 'customising') && (
           <div className="stage-two-left">
-            <ChartView
-              chartSvg={chartSvg}
-              chartLoading={chartLoading}
-              chartError={chartError}
-              chartLoaded={chartLoaded}
-              onCustomise={handleCustomise}
-              onReturnToInput={handleReturnToInput}
-              onCloseCustomise={handleCloseCustomise}
-              onExport={handleExportChart}
-              isCustomiseOpen={viewMode === 'customising'}
-              panelRef={genRef}
-              outputClassName={outputClassName}
-              outputStyle={outputStyle}
-              pulseGroup={previewPulseGroup}
-              pulseNonce={previewPulseNonce}
-              showPlacements={visualSettings.show_placements}
-              showAspects={visualSettings.show_aspects}
-              showShimmer={Boolean(chartSvg) && chartLoading}
-            />
-            <div className={`customise-drop${viewMode === 'customising' ? ' is-open' : ''}`}>
-            <CustomisePanel
-              settings={wheelDraftConfig}
-              visualSettings={visualDraftSettings}
-              chartOptions={chartDraftOptions}
-              hasPendingChanges={hasPendingCustomiseChanges}
-              onUpdateSettings={handleSettingsUpdate}
-              onUpdateVisualSettings={handleVisualSettingsUpdate}
-              onUpdateChartOptions={handleChartOptionsUpdate}
-              onApplyChanges={handleApplyChanges}
-              onClose={handleCloseCustomise}
-              onReturnToInput={handleReturnToInput}
-            />
+            <div className={`left-panel-slot${isCustomising ? ' is-customising' : ' is-chart-ready'}`}>
+              <div className="left-panel-card chart-ready-panel" aria-hidden={isCustomising}>
+                <ChartView
+                  chartSvg={chartSvg}
+                  chartLoading={chartLoading}
+                  chartError={chartError}
+                  chartLoaded={chartLoaded}
+                  onCustomise={handleCustomise}
+                  onReturnToInput={handleReturnToInput}
+                  onCloseCustomise={handleCloseCustomise}
+                  onExport={handleExportChart}
+                  isCustomiseOpen={isCustomising}
+                  panelRef={genRef}
+                  outputClassName={outputClassName}
+                  outputStyle={outputStyle}
+                  pulseGroup={previewPulseGroup}
+                  pulseNonce={previewPulseNonce}
+                  showPlacements={visualSettings.show_placements}
+                  showAspects={visualSettings.show_aspects}
+                  showShimmer={Boolean(chartSvg) && chartLoading}
+                />
+              </div>
+
+              <div className="left-panel-card customise-replace-panel" aria-hidden={!isCustomising}>
+                <CustomisePanel
+                  settings={wheelDraftConfig}
+                  visualSettings={visualDraftSettings}
+                  chartOptions={chartDraftOptions}
+                  hasPendingChanges={hasPendingCustomiseChanges}
+                  onUpdateSettings={handleSettingsUpdate}
+                  onUpdateVisualSettings={handleVisualSettingsUpdate}
+                  onUpdateChartOptions={handleChartOptionsUpdate}
+                  onApplyChanges={handleApplyChanges}
+                  onClose={handleCloseCustomise}
+                  onReturnToInput={handleReturnToInput}
+                />
+              </div>
             </div>
             <ResultUpsell />
           </div>
@@ -675,9 +690,22 @@ export default function Hero() {
       </div>
 
       <div className="hero-right">
-        {(viewMode === 'input' || viewMode === 'generating') && (
-          <div className={viewMode === 'generating' ? 'stage-leaving-left' : ''}>
+        {viewMode === 'input' && (
+          <div>
             {renderInputForm('stage-input-card')}
+          </div>
+        )}
+
+        {viewMode === 'generating' && !chartSvg && (
+          <div className="chart-stage-enter" aria-live="polite" role="status">
+            <div className="blob b1"></div><div className="blob b2"></div>
+            <div className="print-frame chart-loading-frame">
+              <div className="chart-output-wrap chart-output-loading-wrap">
+                <div className="chart-output-loading" aria-hidden="true">
+                  <div className="chart-loading-spinner"></div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
